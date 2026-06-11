@@ -5,9 +5,9 @@ import { Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const NAV_LINKS = [
-  { href: '/', label: 'Analysis' },
-  { href: '/compare', label: 'Compare' },
-  { href: '/watchlist', label: 'Watchlist' },
+  { href: '/app', label: 'Analysis' },
+  { href: '/app/compare', label: 'Compare' },
+  { href: '/app/watchlist', label: 'Watchlist' },
 ];
 
 function ClarifiLogo() {
@@ -60,8 +60,14 @@ export default function Navbar() {
 
           {/* Nav links */}
           <div className="flex items-center gap-0.5">
+            <Link
+              href="/"
+              className="px-3 py-2 text-sm font-medium text-gray-400 dark:text-[#6B7280] hover:text-gray-700 dark:hover:text-[#9CA3AF] transition-colors"
+            >
+              ← Home
+            </Link>
             {NAV_LINKS.map(({ href, label }) => {
-              const active = pathname === href || (href !== '/' && pathname.startsWith(href));
+              const active = href === '/app' ? pathname === '/app' : pathname === href || pathname.startsWith(href + '/');
               return (
                 <Link
                   key={href}

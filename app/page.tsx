@@ -1,532 +1,546 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import {
-  Search, Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info,
-} from 'lucide-react';
-import PriceChart from '@/components/PriceChart';
-import AIAnalysis from '@/components/AIAnalysis';
-import NewsSection from '@/components/NewsSection';
-import { StockData } from '@/lib/types';
-import {
-  formatCurrency, formatLargeNumber, formatPercent, formatVolume,
-  getTrendSignal, getRSISignal,
-} from '@/lib/utils';
+import { useState, useEffect, useRef, ReactNode } from 'react';
+import Link from 'next/link';
 
-// ── Quick-pick tabs ──────────────────────────────────────────────────────────
+// ── Intersection Observer fade-in ────────────────────────────────────────────
 
-const TABS = [
-  { id: 'us',           label: 'US Trending',     picks: ['AAPL', 'NVDA', 'MSFT', 'TSLA', 'GOOGL', 'AMZN', 'META', 'AMD', 'PLTR', 'ARM'] },
-  { id: 'idx-top',      label: 'IDX Top',          picks: ['BBCA', 'BBRI', 'BMRI', 'BBNI', 'BREN', 'DCII', 'TPIA', 'AMMN'] },
-  { id: 'idx-bank',     label: 'IDX Banking',      picks: ['BBCA', 'BBRI', 'BMRI', 'BBNI', 'BRIS', 'NISP', 'BNGA', 'MAYA'] },
-  { id: 'idx-energy',   label: 'IDX Energy',       picks: ['BREN', 'ADRO', 'PTBA', 'ITMG', 'ANTM', 'AMMN', 'MDKA', 'INCO', 'HRUM'] },
-  { id: 'idx-tech',     label: 'IDX Tech',         picks: ['GOTO', 'BUKA', 'EMTK', 'DCII', 'TLKM', 'EXCL', 'ISAT'] },
-  { id: 'idx-consumer', label: 'IDX Consumer',     picks: ['UNVR', 'ICBP', 'INDF', 'MYOR', 'KLBF', 'MIKA', 'HEAL', 'SIDO'] },
-  { id: 'idx-kong',     label: 'IDX Konglomerat',  picks: ['ASII', 'TPIA', 'BRPT', 'INKP', 'TKIM', 'MNCN', 'LPKR', 'MAPI', 'PTRO'] },
-  { id: 'idx-property', label: 'IDX Property',     picks: ['BSDE', 'SMRA', 'CTRA', 'PWON', 'JSMR'] },
-];
-
-// ── Fair Value ───────────────────────────────────────────────────────────────
-
-type FVSignal = 'undervalued' | 'overvalued' | 'fair' | 'na';
-
-interface FVMethod {
-  label: string;
-  description: string;
-  value: number | null;
-  signal: FVSignal;
-  upside: number | null;
-  message?: string;
-}
-
-function getSectorPE(sector: string | null): number {
-  const s = (sector ?? '').toLowerCase();
-  if (s.includes('bank') || s.includes('financ') || s.includes('insurance')) return 12;
-  if (s.includes('tech') || s.includes('software') || s.includes('semiconductor') || s.includes('internet')) return 25;
-  if (s.includes('consumer') || s.includes('retail') || s.includes('staple') || s.includes('beverage') || s.includes('food')) return 18;
-  if (s.includes('energy') || s.includes('mining') || s.includes('oil') || s.includes('coal') || s.includes('metal')) return 10;
-  if (s.includes('telecom') || s.includes('communication') || s.includes('wireless')) return 14;
-  if (s.includes('health') || s.includes('pharma') || s.includes('medical') || s.includes('biotech')) return 20;
-  if (s.includes('real estate') || s.includes('property') || s.includes('reit')) return 15;
-  if (s.includes('industrial') || s.includes('manufactur')) return 14;
-  return 15;
-}
-
-function computeFV(stock: StockData): FVMethod[] | null {
-  if (stock.eps === null) return null;
-  const { eps, bookValue, sector, price } = stock;
-
-  function build(label: string, description: string, raw: number | null, naMsg?: string): FVMethod {
-    if (eps !== null && eps <= 0) {
-      return { label, description, value: null, signal: 'na', upside: null, message: 'N/A — negative earnings' };
-    }
-    if (raw === null) {
-      return { label, description, value: null, signal: 'na', upside: null, message: naMsg ?? 'Insufficient data' };
-    }
-    const upside = ((raw - price) / price) * 100;
-    const signal: FVSignal = upside > 10 ? 'undervalued' : upside < -10 ? 'overvalued' : 'fair';
-    return { label, description, value: raw, signal, upside };
-  }
-
-  const pe = getSectorPE(sector);
-  const grahamVal =
-    eps !== null && eps > 0 && bookValue != null && bookValue > 0
-      ? Math.sqrt(22.5 * eps * bookValue)
-      : null;
-  const peVal  = eps !== null && eps > 0 ? eps * pe : null;
-  const pegVal = eps !== null && eps > 0 ? eps * 10 : null;
-
-  return [
-    build('Graham Number',  "Graham's intrinsic value formula", grahamVal, 'Book value per share unavailable'),
-    build(`P/E Fair Value`, `Sector avg P/E: ${pe}x`,           peVal),
-    build('PEG Value',      'Growth-adjusted (10% rate)',        pegVal),
-  ];
-}
-
-const FV_CFG: Record<FVSignal, { label: string; bg: string; text: string }> = {
-  undervalued: { label: 'Undervalued', bg: 'bg-[#00A86B]/10', text: 'text-[#00A86B]' },
-  overvalued:  { label: 'Overvalued',  bg: 'bg-red-500/10',   text: 'text-red-500'   },
-  fair:        { label: 'Fair',        bg: 'bg-yellow-500/10', text: 'text-yellow-500'},
-  na:          { label: 'N/A',         bg: 'bg-gray-500/10',   text: 'text-[#6B7280]' },
-};
-
-function FairValueCard({ stock }: { stock: StockData }) {
-  const methods = computeFV(stock);
-  if (!methods) return null;
-
-  const validSignals = methods.filter(m => m.signal !== 'na').map(m => m.signal);
-  const under = validSignals.filter(s => s === 'undervalued').length;
-  const over  = validSignals.filter(s => s === 'overvalued').length;
-  const consensus: { label: string; signal: FVSignal } =
-    under >= 2 ? { label: 'Potentially Undervalued', signal: 'undervalued' } :
-    over  >= 2 ? { label: 'Potentially Overvalued',  signal: 'overvalued'  } :
-                 { label: 'Fairly Valued',            signal: 'fair'        };
-  const cc = FV_CFG[consensus.signal];
-
-  return (
-    <div className="card overflow-hidden animate-fade-in">
-      <div className="card-header">
-        <div className="flex items-center gap-2">
-          <span className="card-title">Fair Value Estimate</span>
-          <div className="relative group">
-            <Info className="w-3.5 h-3.5 text-[#6B7280] cursor-help" />
-            <div className="absolute left-0 top-5 z-20 w-52 p-2 text-[11px] leading-relaxed bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Estimates based on fundamental data. Not financial advice.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-2.5">
-        {methods.map(m => {
-          const cfg = FV_CFG[m.signal];
-          return (
-            <div key={m.label} className="flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/40">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-700 dark:text-[#F9FAFB]">{m.label}</p>
-                <p className="text-[10px] text-gray-400 dark:text-[#6B7280] mt-0.5">{m.description}</p>
-              </div>
-              <div className="text-right shrink-0">
-                {m.value != null ? (
-                  <>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">
-                      {formatCurrency(m.value, stock.currency)}
-                    </p>
-                    <p className={`text-[10px] font-semibold ${m.upside! >= 0 ? 'text-[#00A86B]' : 'text-red-500'}`}>
-                      {m.upside! >= 0 ? '+' : ''}{m.upside!.toFixed(1)}%
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-[10px] text-[#6B7280] max-w-[120px] text-right">{m.message}</p>
-                )}
-                <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-1 ${cfg.bg} ${cfg.text}`}>
-                  {cfg.label}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${cc.bg}`}>
-          <span className="text-xs text-gray-500 dark:text-[#9CA3AF]">Consensus</span>
-          <span className={`text-xs font-bold ${cc.text}`}>{consensus.label}</span>
-        </div>
-
-        <p className="text-[10px] text-[#6B7280] text-center pt-1">
-          For educational purposes only. Not financial advice.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ── Shared UI pieces ─────────────────────────────────────────────────────────
-
-function ChangeChip({ value, label }: { value: number; label: string }) {
-  const pos = value >= 0;
-  return (
-    <div className={`flex flex-col items-center px-3 py-2 rounded-lg min-w-[70px] ${pos ? 'bg-[#00A86B]/10' : 'bg-red-500/10'}`}>
-      <span className="text-[10px] text-[#9CA3AF] font-medium">{label}</span>
-      <span className={`text-sm font-bold ${pos ? 'text-[#00A86B]' : 'text-red-500'}`}>
-        {formatPercent(value)}
-      </span>
-    </div>
-  );
-}
-
-function MetricBox({ label, value, sub, subColor }: { label: string; value: string | number; sub?: string; subColor?: string }) {
-  return (
-    <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-3">
-      <p className="metric-label mb-0.5">{label}</p>
-      <p className="metric-value truncate">{value}</p>
-      {sub && <p className={`text-[11px] mt-0.5 ${subColor ?? 'text-[#6B7280]'}`}>{sub}</p>}
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="animate-fade-in">
-      <div className="lg:grid lg:grid-cols-[62%_38%] lg:gap-4 space-y-4 lg:space-y-0">
-        <div className="space-y-4">
-          <div className="card p-4">
-            <div className="skeleton h-8 rounded w-48 mb-2" />
-            <div className="skeleton h-4 rounded w-72 mb-4" />
-            <div className="flex gap-2">
-              {[1, 2, 3].map(i => <div key={i} className="skeleton h-12 rounded-lg w-20" />)}
-            </div>
-          </div>
-          <div className="card p-4">
-            <div className="skeleton h-4 rounded w-36 mb-3" />
-            <div className="skeleton h-60 rounded w-full" />
-          </div>
-          <div className="card p-4">
-            <div className="skeleton h-4 rounded w-36 mb-3" />
-            <div className="grid grid-cols-2 gap-2">
-              {[1, 2, 3, 4].map(i => <div key={i} className="skeleton h-16 rounded-lg" />)}
-            </div>
-          </div>
-        </div>
-        <div className="space-y-4">
-          <div className="card p-4">
-            <div className="skeleton h-4 rounded w-28 mb-3" />
-            <div className="grid grid-cols-2 gap-2">
-              {[1, 2, 3, 4].map(i => <div key={i} className="skeleton h-16 rounded-lg" />)}
-            </div>
-          </div>
-          <div className="card p-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="py-3 border-b border-gray-100 dark:border-[#1F2937] last:border-0">
-                <div className="skeleton h-3.5 rounded w-full mb-2" />
-                <div className="skeleton h-3 rounded w-4/5" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main component ───────────────────────────────────────────────────────────
-
-function StockAnalysis() {
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [stock, setStock] = useState<StockData | null>(null);
-  const [watchlist, setWatchlist] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState('us');
-
-  const searchParams = useSearchParams();
+function FadeIn({
+  children,
+  delay = 0,
+  className = '',
+}: {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('watchlist');
-      if (raw) setWatchlist(JSON.parse(raw));
-    } catch { /* ignore */ }
-    const sym = searchParams.get('symbol');
-    if (sym) fetchStock(sym);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
-  const fetchStock = async (sym: string) => {
-    const s = sym.trim().toUpperCase();
-    if (!s) return;
-    setLoading(true);
-    setError(null);
-    setStock(null);
-    try {
-      const res = await fetch(`/api/stock?symbol=${encodeURIComponent(s)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed to load stock');
-      setStock(data as StockData);
-      setQuery(s);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchStock(query);
-  };
-
-  const toggleWatch = () => {
-    if (!stock) return;
-    const sym = stock.symbol;
-    const next = watchlist.includes(sym) ? watchlist.filter(s => s !== sym) : [...watchlist, sym];
-    setWatchlist(next);
-    localStorage.setItem('watchlist', JSON.stringify(next));
-  };
-
-  const isWatching = stock ? watchlist.includes(stock.symbol) : false;
-  const trend = stock ? getTrendSignal(stock.change1M) : null;
-  const rsiSignal = stock ? getRSISignal(stock.rsi14) : null;
-  const activePicks = TABS.find(t => t.id === activeTab)?.picks ?? [];
-  const hasFundamentals = stock && (
-    stock.marketCap != null || stock.peRatio != null || stock.eps != null ||
-    stock.beta != null || stock.dividendYield != null || stock.sector != null
-  );
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      } ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
 
-        {/* Search */}
-        <div className="max-w-[680px] mx-auto mb-5">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search ticker... (e.g. AAPL, BBRI, PTRO, NVDA)"
-                className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00A86B]/30 focus:border-[#00A86B] dark:text-[#F9FAFB] placeholder:text-[#6B7280]"
-              />
+// ── Logo ─────────────────────────────────────────────────────────────────────
+
+function ClarifiLogo({ size = 32 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 52 52" width={size} height={size} aria-hidden="true">
+      <rect width="52" height="52" rx="11" fill="#00A86B" />
+      <polyline
+        points="12,36 20,16 27,28 34,8 40,5"
+        stroke="white"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="40" cy="5" r="3.5" fill="white" />
+      <line x1="40" x2="40" y1="5" y2="14" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ── App Mockup ────────────────────────────────────────────────────────────────
+
+function AppMockup() {
+  return (
+    <div className="relative w-full max-w-[360px] mx-auto lg:mx-0">
+      {/* Glow */}
+      <div className="absolute -inset-6 bg-[#00A86B]/15 rounded-3xl blur-3xl pointer-events-none" />
+
+      {/* Card */}
+      <div className="relative bg-[#111827] rounded-2xl border border-[#1F2937] p-5 shadow-2xl shadow-black/60">
+        {/* Stock header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-[#9CA3AF]">BBRI:IDX</span>
+              <span className="text-[10px] bg-[#00A86B]/15 text-[#00A86B] px-1.5 py-0.5 rounded font-semibold">
+                IDX
+              </span>
             </div>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? '…' : 'Search'}
-            </button>
-          </form>
-          <p className="mt-1.5 text-[11px] text-[#6B7280] text-center">
-            Clarity in every trade — US stocks &amp; IDX auto-detected
+            <div className="text-2xl font-bold text-white">Rp 4,580</div>
+            <div className="text-sm font-semibold text-[#00A86B] mt-0.5">▲ +2.47% today</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] text-[#9CA3AF] mb-2 max-w-[100px] text-right leading-tight">
+              Bank Rakyat Indonesia
+            </div>
+            <span className="text-[10px] bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/20 px-2 py-1 rounded-full font-semibold">
+              Bullish
+            </span>
+          </div>
+        </div>
+
+        {/* Mini chart */}
+        <div className="h-[72px] mb-4 rounded-xl overflow-hidden bg-[#0A0F1E]">
+          <svg viewBox="0 0 300 72" preserveAspectRatio="none" className="w-full h-full">
+            <defs>
+              <linearGradient id="mockGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00A86B" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#00A86B" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M0,62 C20,58 30,55 50,50 C70,45 80,42 100,36 C120,30 130,28 150,22 C170,16 185,12 210,10 C230,8 250,7 270,5 L300,3"
+              stroke="#00A86B"
+              strokeWidth="2.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+            <path
+              d="M0,62 C20,58 30,55 50,50 C70,45 80,42 100,36 C120,30 130,28 150,22 C170,16 185,12 210,10 C230,8 250,7 270,5 L300,3 L300,72 L0,72 Z"
+              fill="url(#mockGrad)"
+            />
+          </svg>
+        </div>
+
+        {/* Metrics row */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {[
+            { label: 'RSI (14)', value: '58.3', color: 'text-yellow-400' },
+            { label: 'vs SMA20', value: '▲ Above', color: 'text-[#00A86B]' },
+            { label: 'Rel Vol', value: '1.8x', color: 'text-blue-400' },
+          ].map(m => (
+            <div key={m.label} className="bg-[#0A0F1E] rounded-lg p-2 text-center">
+              <div className="text-[10px] text-[#9CA3AF] mb-0.5">{m.label}</div>
+              <div className={`text-xs font-bold ${m.color}`}>{m.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* AI Analysis teaser */}
+        <div className="bg-[#00A86B]/8 border border-[#00A86B]/20 rounded-xl p-3 mb-3">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-xs">🤖</span>
+            <span className="text-[11px] font-semibold text-[#00A86B]">AI Analysis</span>
+          </div>
+          <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
+            Strong uptrend confirmed — RSI neutral at 58, price above SMA20 &amp; SMA50.
+            Key support at Rp&nbsp;4,200. Watch for breakout above Rp&nbsp;4,800...
           </p>
         </div>
 
-        {/* Sector tabs */}
-        <div className="mb-5">
-          <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-[#00A86B] text-white'
-                    : 'bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-500 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {activePicks.map(s => (
-              <button
-                key={s}
-                onClick={() => fetchStock(s)}
-                className="px-2.5 py-1 text-xs font-medium bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] rounded-md hover:border-[#00A86B] hover:text-[#00A86B] transition-colors"
-              >
-                {s.replace(':IDX', '')}
-              </button>
-            ))}
+        {/* Fair value teaser */}
+        <div className="flex items-center justify-between px-3 py-2 bg-[#0A0F1E] rounded-lg">
+          <span className="text-[11px] text-[#9CA3AF]">Graham Number</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-white">Rp 5,120</span>
+            <span className="text-[10px] bg-[#00A86B]/15 text-[#00A86B] px-1.5 py-0.5 rounded-full font-semibold">
+              Undervalued
+            </span>
           </div>
         </div>
-
-        {/* Error */}
-        {error && !loading && (
-          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 px-4 py-3 text-sm text-red-600 dark:text-red-400 mb-4">
-            {error}
-          </div>
-        )}
-
-        {loading && <LoadingSkeleton />}
-
-        {!stock && !loading && !error && (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-            <BarChart2 className="w-10 h-10 text-gray-200 dark:text-gray-800" />
-            <p className="text-[#9CA3AF] text-sm">Search for any stock symbol to get started</p>
-            <p className="text-[#6B7280] text-xs">IDX stocks auto-detected — type BBRI, PTRO, BREN without any suffix</p>
-          </div>
-        )}
-
-        {/* Two-column layout */}
-        {stock && !loading && (
-          <div className="animate-fade-in lg:grid lg:grid-cols-[62%_38%] lg:gap-4 space-y-4 lg:space-y-0">
-
-            {/* ── Left 62% ── */}
-            <div className="space-y-4">
-
-              {/* Header card */}
-              <div className="card p-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <div className="flex items-center gap-2.5 mb-1 flex-wrap">
-                      <h1 className="text-[32px] font-bold text-gray-900 dark:text-[#F9FAFB] leading-tight">
-                        {formatCurrency(stock.price, stock.currency)}
-                      </h1>
-                      <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
-                        stock.changePercent >= 0 ? 'bg-[#00A86B]/10 text-[#00A86B]' : 'bg-red-500/10 text-red-500'
-                      }`}>
-                        {formatPercent(stock.changePercent)}
-                      </span>
-                      {trend === 'bullish' && <TrendingUp className="w-4 h-4 text-[#00A86B]" />}
-                      {trend === 'bearish' && <TrendingDown className="w-4 h-4 text-red-500" />}
-                      {trend === 'neutral' && <Minus className="w-4 h-4 text-[#6B7280]" />}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-gray-800 dark:text-[#F9FAFB]">{stock.symbol}</span>
-                      <span className="text-sm text-[#9CA3AF] truncate max-w-[220px]">{stock.name}</span>
-                      <span className={`text-[11px] px-1.5 py-0.5 rounded font-semibold ${
-                        stock.currency === 'IDR' || stock.exchange?.toLowerCase().includes('indonesia') || stock.exchange?.toUpperCase() === 'IDX'
-                          ? 'bg-[#00A86B]/15 text-[#00A86B]'
-                          : stock.exchange?.toUpperCase().includes('NASDAQ')
-                          ? 'bg-blue-500/15 text-blue-500'
-                          : stock.exchange?.toUpperCase().includes('NYSE')
-                          ? 'bg-blue-600/15 text-blue-600'
-                          : 'bg-gray-100 dark:bg-gray-800 text-[#9CA3AF]'
-                      }`}>
-                        {stock.exchange}
-                      </span>
-                      {trend && (
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
-                          trend === 'bullish' ? 'bg-[#00A86B]/10 text-[#00A86B]'
-                          : trend === 'bearish' ? 'bg-red-500/10 text-red-500'
-                          : 'bg-gray-100 dark:bg-gray-800 text-[#9CA3AF]'
-                        }`}>
-                          {trend.charAt(0).toUpperCase() + trend.slice(1)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={toggleWatch}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors shrink-0 ${
-                      isWatching
-                        ? 'bg-[#00A86B]/10 border-[#00A86B] text-[#00A86B]'
-                        : 'bg-white dark:bg-[#111827] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]'
-                    }`}
-                  >
-                    {isWatching ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                    {isWatching ? 'Watching' : 'Watch'}
-                  </button>
-                </div>
-                <div className="h-px bg-gray-100 dark:bg-[#1F2937] mb-3" />
-                <div className="flex flex-wrap gap-2">
-                  <ChangeChip value={stock.changePercent} label="Today" />
-                  <ChangeChip value={stock.change1M} label="1 Month" />
-                  <ChangeChip value={stock.change3M} label="3 Months" />
-                </div>
-              </div>
-
-              {/* Chart */}
-              <div className="card p-4">
-                <h2 className="card-title mb-3">Price History — 90 Days</h2>
-                <PriceChart data={stock.priceHistory} currency={stock.currency} />
-              </div>
-
-              {/* Technical indicators */}
-              <div className="card p-4">
-                <h2 className="card-title mb-3">Technical Indicators</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <MetricBox
-                    label="RSI (14)"
-                    value={stock.rsi14}
-                    sub={rsiSignal === 'overbought' ? 'Overbought' : rsiSignal === 'oversold' ? 'Oversold' : 'Neutral zone'}
-                    subColor={rsiSignal === 'overbought' ? 'text-red-500' : rsiSignal === 'oversold' ? 'text-[#00A86B]' : 'text-[#6B7280]'}
-                  />
-                  <MetricBox
-                    label="Rel. Volume"
-                    value={`${stock.relativeVolume}x`}
-                    sub={`Vol: ${formatVolume(stock.volume)}`}
-                  />
-                  <MetricBox
-                    label="SMA 20"
-                    value={formatCurrency(stock.sma20, stock.currency)}
-                    sub={stock.price >= stock.sma20 ? '▲ Above' : '▼ Below'}
-                    subColor={stock.price >= stock.sma20 ? 'text-[#00A86B]' : 'text-red-500'}
-                  />
-                  <MetricBox
-                    label="SMA 50"
-                    value={formatCurrency(stock.sma50, stock.currency)}
-                    sub={stock.price >= stock.sma50 ? '▲ Above' : '▼ Below'}
-                    subColor={stock.price >= stock.sma50 ? 'text-[#00A86B]' : 'text-red-500'}
-                  />
-                </div>
-              </div>
-
-              {/* AI Analysis */}
-              <AIAnalysis stockData={stock} />
-            </div>
-
-            {/* ── Right 38% ── */}
-            <div className="space-y-4">
-
-              {/* Key Levels */}
-              <div className="card p-4">
-                <h2 className="card-title mb-3">Key Levels</h2>
-                <div className="grid grid-cols-2 gap-2">
-                  <MetricBox label="20-Day High" value={formatCurrency(stock.high20d, stock.currency)} />
-                  <MetricBox label="20-Day Low"  value={formatCurrency(stock.low20d,  stock.currency)} />
-                  <MetricBox label="52-Week High" value={formatCurrency(stock.high52w, stock.currency)} />
-                  <MetricBox label="52-Week Low"  value={formatCurrency(stock.low52w,  stock.currency)} />
-                </div>
-              </div>
-
-              {/* Fundamentals */}
-              {hasFundamentals && (
-                <div className="card p-4">
-                  <h2 className="card-title mb-3">Fundamentals</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <MetricBox label="Market Cap" value={formatLargeNumber(stock.marketCap, stock.currency)} />
-                    <MetricBox label="P/E Ratio"  value={stock.peRatio != null ? stock.peRatio.toFixed(2) : 'N/A'} />
-                    <MetricBox
-                      label="EPS (TTM)"
-                      value={stock.eps != null
-                        ? `${stock.currency === 'IDR' ? 'Rp' : '$'}${stock.eps.toFixed(2)}`
-                        : 'N/A'}
-                    />
-                    <MetricBox label="Beta" value={stock.beta != null ? stock.beta.toFixed(2) : 'N/A'} />
-                    <MetricBox
-                      label="Div. Yield"
-                      value={stock.dividendYield != null ? `${(stock.dividendYield * 100).toFixed(2)}%` : 'N/A'}
-                    />
-                    <MetricBox label="Sector" value={stock.sector ?? 'N/A'} />
-                  </div>
-                </div>
-              )}
-
-              {/* Fair Value */}
-              <FairValueCard stock={stock} />
-
-              {/* News */}
-              <NewsSection symbol={stock.symbol} name={stock.name} />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-export default function HomePage() {
+// ── Landing page ──────────────────────────────────────────────────────────────
+
+export default function LandingPage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <Suspense>
-      <StockAnalysis />
-    </Suspense>
+    <div className="bg-[#0A0F1E] text-[#F9FAFB] min-h-screen">
+
+      {/* ── Navbar ── */}
+      <nav className="sticky top-0 z-50 bg-[#0A0F1E]/90 backdrop-blur-md border-b border-[#1F2937]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2.5 shrink-0">
+              <ClarifiLogo size={30} />
+              <span className="text-base font-bold text-white tracking-tight">Clarifi</span>
+            </Link>
+
+            {/* Desktop nav */}
+            <div className="hidden md:flex items-center gap-6">
+              <a href="#features" className="text-sm text-[#9CA3AF] hover:text-white transition-colors">
+                Features
+              </a>
+              <a href="#how-it-works" className="text-sm text-[#9CA3AF] hover:text-white transition-colors">
+                How it works
+              </a>
+            </div>
+
+            {/* CTA + hamburger */}
+            <div className="flex items-center gap-3">
+              <Link
+                href="/app"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-[#00A86B] hover:bg-[#00966F] text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                Start for Free
+              </Link>
+
+              {/* Hamburger */}
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                className="md:hidden p-2 text-[#9CA3AF] hover:text-white transition-colors"
+                aria-label="Toggle menu"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {menuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="md:hidden border-t border-[#1F2937] bg-[#0A0F1E] px-4 py-4 space-y-3">
+            <a
+              href="#features"
+              onClick={() => setMenuOpen(false)}
+              className="block text-sm text-[#9CA3AF] hover:text-white transition-colors py-1"
+            >
+              Features
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={() => setMenuOpen(false)}
+              className="block text-sm text-[#9CA3AF] hover:text-white transition-colors py-1"
+            >
+              How it works
+            </a>
+            <Link
+              href="/app"
+              className="block px-4 py-2.5 bg-[#00A86B] hover:bg-[#00966F] text-white text-sm font-semibold rounded-xl transition-colors text-center"
+            >
+              Start for Free
+            </Link>
+          </div>
+        )}
+      </nav>
+
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden pt-20 pb-24 px-4 sm:px-6">
+        {/* Background gradient blobs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#00A86B]/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+            {/* Left: Text */}
+            <div>
+              <FadeIn>
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#00A86B] bg-[#00A86B]/10 border border-[#00A86B]/20 rounded-full mb-6">
+                  ✨ AI-Powered Stock Research
+                </span>
+              </FadeIn>
+
+              <FadeIn delay={100}>
+                <h1 className="text-5xl sm:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+                  Clarity in<br />
+                  <span className="text-[#00A86B]">Every Trade</span>
+                </h1>
+              </FadeIn>
+
+              <FadeIn delay={200}>
+                <p className="text-lg text-[#9CA3AF] leading-relaxed mb-8 max-w-lg">
+                  Professional stock analysis for US and Indonesian markets. Get AI insights,
+                  fair value estimates, and real-time data in seconds.
+                </p>
+              </FadeIn>
+
+              <FadeIn delay={300}>
+                <div className="flex flex-wrap gap-3 mb-7">
+                  <Link
+                    href="/app"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#00A86B] hover:bg-[#00966F] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#00A86B]/25 text-sm"
+                  >
+                    Start for Free →
+                  </Link>
+                  <a
+                    href="#how-it-works"
+                    className="inline-flex items-center gap-2 px-6 py-3 border border-[#1F2937] hover:border-[#00A86B]/40 text-[#F9FAFB] font-semibold rounded-xl transition-colors text-sm"
+                  >
+                    See Demo
+                  </a>
+                </div>
+              </FadeIn>
+
+              <FadeIn delay={400}>
+                <div className="flex flex-wrap gap-5 text-sm text-[#9CA3AF]">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[#00A86B]">✓</span> Free forever
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[#00A86B]">✓</span> No signup required
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[#00A86B]">✓</span> US + IDX markets
+                  </span>
+                </div>
+              </FadeIn>
+            </div>
+
+            {/* Right: Mockup */}
+            <FadeIn delay={200} className="flex justify-center lg:justify-end">
+              <AppMockup />
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section id="features" className="py-24 px-4 sm:px-6 bg-[#111827]/50">
+        <div className="max-w-7xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Everything you need to trade smarter
+              </h2>
+              <p className="text-[#9CA3AF] text-lg max-w-xl mx-auto">
+                Built for serious traders who want institutional-grade tools without the price tag.
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                icon: '🤖',
+                title: 'AI-Powered Analysis',
+                desc: 'Get professional 4-paragraph analysis on any stock powered by Groq Llama 3.3. Trend, support/resistance, momentum, and risk — all in seconds.',
+              },
+              {
+                icon: '🌏',
+                title: 'US + Indonesia Markets',
+                desc: 'Search any US stock (AAPL, NVDA) or Indonesian IDX stock (BBRI, BBCA, TLKM) without any suffix. Auto-detected instantly.',
+              },
+              {
+                icon: '💰',
+                title: 'Fair Value Estimates',
+                desc: 'Know if a stock is undervalued or overvalued using Graham Number and P/E based valuation methods.',
+              },
+              {
+                icon: '📰',
+                title: 'Real-time News',
+                desc: 'Latest news for every stock from global and Indonesian sources, updated automatically.',
+              },
+            ].map((f, i) => (
+              <FadeIn key={f.title} delay={i * 80}>
+                <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 h-full hover:border-[#00A86B]/30 transition-colors group">
+                  <div className="text-3xl mb-4">{f.icon}</div>
+                  <h3 className="text-base font-bold text-white mb-3 group-hover:text-[#00A86B] transition-colors">
+                    {f.title}
+                  </h3>
+                  <p className="text-sm text-[#9CA3AF] leading-relaxed">{f.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section id="how-it-works" className="py-24 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Get started in 3 steps</h2>
+              <p className="text-[#9CA3AF] text-lg">No signup, no credit card, no waiting.</p>
+            </div>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+            {/* Connector line */}
+            <div className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-[#00A86B]/30 via-[#00A86B]/60 to-[#00A86B]/30" />
+
+            {[
+              {
+                step: '1',
+                icon: '🔍',
+                title: 'Search any stock',
+                desc: 'Type AAPL, BBRI, NVDA, or any ticker. US and IDX markets auto-detected.',
+              },
+              {
+                step: '2',
+                icon: '📊',
+                title: 'Get instant data',
+                desc: 'Price, chart, technicals, and news in seconds. No lag, no refresh needed.',
+              },
+              {
+                step: '3',
+                icon: '🤖',
+                title: 'AI Analysis',
+                desc: 'Click Analyze for professional insights powered by Groq Llama 3.3.',
+              },
+            ].map((s, i) => (
+              <FadeIn key={s.step} delay={i * 120}>
+                <div className="flex flex-col items-center text-center">
+                  <div className="relative mb-5">
+                    <div className="w-20 h-20 rounded-2xl bg-[#111827] border border-[#1F2937] flex items-center justify-center text-3xl shadow-lg">
+                      {s.icon}
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#00A86B] text-white text-xs font-bold flex items-center justify-center">
+                      {s.step}
+                    </div>
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-2">{s.title}</h3>
+                  <p className="text-sm text-[#9CA3AF] leading-relaxed">{s.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ── */}
+      <section className="py-24 px-4 sm:px-6 bg-[#111827]/50">
+        <div className="max-w-6xl mx-auto">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Trusted by traders across Indonesia and the US
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote:
+                  'Finally a tool that covers both IDX and US stocks in one place! The interface is clean and fast.',
+                name: 'Andi R.',
+                title: 'Jakarta trader',
+                initials: 'AR',
+              },
+              {
+                quote:
+                  'The AI analysis saves me hours of research every week. Game changer for my portfolio decisions.',
+                name: 'Sarah M.',
+                title: 'Surabaya investor',
+                initials: 'SM',
+              },
+              {
+                quote:
+                  'Fair value estimates help me make smarter buy/sell decisions. I use Clarifi every morning.',
+                name: 'Budi S.',
+                title: 'Bandung',
+                initials: 'BS',
+              },
+            ].map((t, i) => (
+              <FadeIn key={t.name} delay={i * 100}>
+                <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 h-full flex flex-col">
+                  {/* Stars */}
+                  <div className="flex gap-0.5 mb-4">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <svg key={j} className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+
+                  <p className="text-sm text-[#9CA3AF] leading-relaxed flex-1 mb-5">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#00A86B]/20 text-[#00A86B] text-xs font-bold flex items-center justify-center shrink-0">
+                      {t.initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{t.name}</p>
+                      <p className="text-xs text-[#9CA3AF]">{t.title}</p>
+                    </div>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="py-24 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <FadeIn>
+            <div className="bg-gradient-to-br from-[#111827] to-[#0A0F1E] border border-[#1F2937] rounded-3xl px-8 py-16 relative overflow-hidden">
+              {/* Decorative glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#00A86B]/5 to-transparent pointer-events-none" />
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#00A86B]/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative">
+                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                  Ready to trade smarter?
+                </h2>
+                <p className="text-[#9CA3AF] text-lg mb-8">
+                  Join thousands of traders using Clarifi for free
+                </p>
+                <Link
+                  href="/app"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-[#00A86B] hover:bg-[#00966F] text-white font-bold rounded-2xl transition-all hover:shadow-xl hover:shadow-[#00A86B]/30 text-base"
+                >
+                  Start Analyzing Now →
+                </Link>
+                <p className="mt-5 text-sm text-[#9CA3AF]">No credit card required • Always free</p>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-[#1F2937] py-10 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+
+            {/* Logo + tagline */}
+            <div className="flex items-center gap-3">
+              <ClarifiLogo size={28} />
+              <div>
+                <span className="font-bold text-white text-sm">Clarifi</span>
+                <p className="text-xs text-[#9CA3AF]">Clarity in every trade</p>
+              </div>
+            </div>
+
+            {/* Links */}
+            <div className="flex items-center gap-6 text-sm text-[#9CA3AF]">
+              <Link href="/app" className="hover:text-white transition-colors">Analysis</Link>
+              <Link href="/app/compare" className="hover:text-white transition-colors">Compare</Link>
+              <Link href="/app/watchlist" className="hover:text-white transition-colors">Watchlist</Link>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-[#1F2937] text-center text-xs text-[#6B7280]">
+            © 2025 Clarifi. Data by Yahoo Finance &amp; Twelve Data.
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

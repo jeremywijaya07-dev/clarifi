@@ -77,7 +77,7 @@ export default function WatchlistPage() {
             <BookmarkCheck className="w-10 h-10 text-gray-200 dark:text-gray-800" />
             <p className="text-gray-500 dark:text-gray-400 text-sm">Your watchlist is empty</p>
             <Link
-              href="/"
+              href="/app"
               className="text-[#1D9E75] hover:underline text-sm font-medium"
             >
               Search for stocks to add
@@ -158,7 +158,7 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
   return (
     <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
       <div className="flex items-center justify-between gap-3">
-        <Link href={`/?symbol=${encodeURIComponent(data.symbol)}`} className="flex-1 min-w-0 group">
+        <Link href={`/app?symbol=${encodeURIComponent(data.symbol)}`} className="flex-1 min-w-0 group">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#1D9E75] transition-colors">
               {data.symbol}
@@ -200,7 +200,7 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{data.rsi14}</p>
           </div>
           <Link
-            href={`/?symbol=${encodeURIComponent(data.symbol)}`}
+            href={`/app?symbol=${encodeURIComponent(data.symbol)}`}
             className="p-1.5 text-gray-400 hover:text-[#1D9E75] transition-colors"
             title="View analysis"
           >

@@ -131,7 +131,6 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
       v1: String(s1.rsi14),
       v2: String(s2.rsi14),
       winner: (() => {
-        // Closer to 50 = more neutral/healthy
         const d1 = Math.abs(s1.rsi14 - 50);
         const d2 = Math.abs(s2.rsi14 - 50);
         return numWinner(d1, d2, false);
@@ -153,7 +152,6 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
       label: 'P/E Ratio',
       v1: s1.peRatio?.toFixed(2) ?? 'N/A',
       v2: s2.peRatio?.toFixed(2) ?? 'N/A',
-      // Lower P/E = more value (winner = lower, so higherIsBetter=false)
       winner: numWinner(s1.peRatio, s2.peRatio, false),
     },
     {
@@ -285,7 +283,6 @@ export default function ComparePage() {
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-4">
-              {/* Table header */}
               <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-xs font-semibold">
                 <span className="text-blue-600 dark:text-blue-400">{stock1.symbol}</span>
                 <span className="text-center w-8" />
@@ -388,7 +385,6 @@ export default function ComparePage() {
           </>
         )}
 
-        {/* Prompt if not both loaded */}
         {(!stock1 || !stock2) && (
           <div className="text-center py-12 text-sm text-gray-400 dark:text-gray-500">
             Load both stocks above to see the comparison
