@@ -207,7 +207,7 @@ async function fetchYahooStock(origSymbol: string): Promise<StockData> {
 
   const n             = closes.length;
   const currentPrice  = round2(meta.regularMarketPrice ?? closes[n - 1]);
-  const prevClose     = meta.chartPreviousClose ?? meta.previousClose ?? closes[n - 2] ?? currentPrice;
+  const prevClose     = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose || currentPrice;
   const dailyChange   = round2(currentPrice - prevClose);
   const changePercent = round2(prevClose > 0 ? ((currentPrice - prevClose) / prevClose) * 100 : 0);
   const currentVolume = Math.round(meta.regularMarketVolume ?? volumes[n - 1] ?? 0);
