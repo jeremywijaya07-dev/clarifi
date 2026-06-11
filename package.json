@@ -1,0 +1,32 @@
+{
+  "name": "stock-research",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "next build",
+    "start": "next start",
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "@google/generative-ai": "^0.24.1",
+    "groq-sdk": "^1.2.1",
+    "lucide-react": "^0.462.0",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/xml2js": "^0.4.14",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.5.4"
+  }
+}
