@@ -87,6 +87,16 @@ export default function Navbar() {
             })}
           </div>
 
+          {/* Feedback */}
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSclVEEoD3bx1bDLgs4K4QmgLNxRu3irogjDnqrQOddrrufuIg/viewform?usp=publish-editor"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border border-[#00A86B]/30 text-[#9CA3AF] hover:text-[#00A86B] hover:border-[#00A86B] rounded-lg transition-colors"
+          >
+            Feedback 💬
+          </a>
+
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}

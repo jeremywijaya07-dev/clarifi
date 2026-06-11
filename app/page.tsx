@@ -533,6 +533,14 @@ export default function LandingPage() {
               <Link href="/app" className="hover:text-white transition-colors">Analysis</Link>
               <Link href="/app/compare" className="hover:text-white transition-colors">Compare</Link>
               <Link href="/app/watchlist" className="hover:text-white transition-colors">Watchlist</Link>
+              <a
+                href="https://docs.google.com/forms/d/e/1FAIpQLSclVEEoD3bx1bDLgs4K4QmgLNxRu3irogjDnqrQOddrrufuIg/viewform?usp=publish-editor"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Feedback 💬
+              </a>
             </div>
           </div>
 
