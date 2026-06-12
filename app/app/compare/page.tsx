@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Search, Loader2, Sparkles, ArrowUp, Trophy } from 'lucide-react';
+import { Loader2, Sparkles, ArrowUp, Trophy } from 'lucide-react';
 import { StockData } from '@/lib/types';
 import {
   formatCurrency,
@@ -8,6 +8,7 @@ import {
   formatPercent,
   getRSISignal,
 } from '@/lib/utils';
+import TickerAutocomplete from '@/components/TickerAutocomplete';
 
 
 function numWinner(a: number | null, b: number | null, higherIsBetter = true): 1 | 2 | 0 {
@@ -48,8 +49,8 @@ function StockSearchInput({
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const load = async () => {
-    const s = sym.trim().toUpperCase();
+  const load = async (overrideSym?: string) => {
+    const s = (overrideSym ?? sym).trim().toUpperCase();
     if (!s) return;
     setLoading(true);
     setErr(null);
@@ -69,20 +70,21 @@ function StockSearchInput({
     <div>
       <p className={`text-xs font-semibold mb-1.5 ${color}`}>{label}</p>
       <div className="flex gap-2">
-        <input
-          type="text"
+        <TickerAutocomplete
           value={sym}
-          onChange={e => setSym(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && load()}
-          placeholder="AAPL or BBRI:IDX"
-          className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/30 focus:border-[#1D9E75] dark:text-white"
+          onChange={setSym}
+          onSelect={ticker => { setSym(ticker); load(ticker); }}
+          onEnterPress={() => load()}
+          placeholder="AAPL or BBRI"
+          showIcon={false}
+          inputClassName="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/30 focus:border-[#1D9E75] dark:text-white"
         />
         <button
-          onClick={load}
+          onClick={() => load()}
           disabled={loading || !sym.trim()}
-          className="px-3 py-2 bg-[#1D9E75] hover:bg-[#178a65] disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
+          className="px-3 py-2 bg-[#1D9E75] hover:bg-[#178a65] disabled:opacity-50 text-white text-sm rounded-lg transition-colors shrink-0"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Go'}
         </button>
       </div>
       {err && <p className="text-xs text-[#EF4444] mt-1">{err}</p>}

@@ -2,11 +2,12 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  Search, Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info,
+  Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info, Zap,
 } from 'lucide-react';
 import PriceChart from '@/components/PriceChart';
 import AIAnalysis from '@/components/AIAnalysis';
 import NewsSection from '@/components/NewsSection';
+import TickerAutocomplete from '@/components/TickerAutocomplete';
 import { StockData } from '@/lib/types';
 import {
   formatCurrency, formatLargeNumber, formatPercent, formatVolume,
@@ -295,30 +296,36 @@ function StockAnalysis() {
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
-        {/* Search */}
-        <div className="max-w-[680px] mx-auto mb-5">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
+        {/* Search — own card */}
+        <div className="max-w-[680px] mx-auto mb-4">
+          <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <TickerAutocomplete
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={setQuery}
+                onSelect={sym => { setQuery(sym); fetchStock(sym); }}
                 placeholder="Search ticker... (e.g. AAPL, BBRI, PTRO, NVDA)"
-                className="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00A86B]/30 focus:border-[#00A86B] dark:text-[#F9FAFB] placeholder:text-[#6B7280]"
+                showIcon
+                inputClassName="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent border border-gray-200 dark:border-[#1F2937] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00A86B]/30 focus:border-[#00A86B] dark:text-[#F9FAFB] placeholder:text-[#6B7280]"
               />
-            </div>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? '…' : 'Search'}
-            </button>
-          </form>
-          <p className="mt-1.5 text-[11px] text-[#6B7280] text-center">
-            Clarity in every trade — US stocks &amp; IDX auto-detected
-          </p>
+              <button type="submit" disabled={loading} className="btn-primary shrink-0">
+                {loading ? '…' : 'Search'}
+              </button>
+            </form>
+            <p className="mt-1.5 text-[11px] text-[#6B7280] text-center">
+              Clarity in every trade — US stocks &amp; IDX auto-detected
+            </p>
+          </div>
         </div>
 
-        {/* Sector tabs */}
-        <div className="mb-5">
+        {/* Quick Picks — separate card */}
+        <div className="mb-5 bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <Zap className="w-3 h-3 text-[#00A86B]" />
+            <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              Quick Picks
+            </span>
+          </div>
           <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
             {TABS.map(tab => (
               <button
@@ -327,7 +334,7 @@ function StockAnalysis() {
                 className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   activeTab === tab.id
                     ? 'bg-[#00A86B] text-white'
-                    : 'bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-500 dark:text-[#9CA3AF] hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B]'
+                    : 'bg-gray-50 dark:bg-[#0A0F1E] border border-gray-200 dark:border-[#1F2937] text-gray-500 dark:text-[#9CA3AF] hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B]'
                 }`}
               >
                 {tab.label}
@@ -339,7 +346,7 @@ function StockAnalysis() {
               <button
                 key={s}
                 onClick={() => fetchStock(s)}
-                className="px-2.5 py-1 text-xs font-medium bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] rounded-md hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B] transition-colors"
+                className="px-2.5 py-1 text-xs font-medium bg-gray-50 dark:bg-[#0A0F1E] border border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] rounded-md hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B] transition-colors"
               >
                 {s.replace(':IDX', '')}
               </button>
