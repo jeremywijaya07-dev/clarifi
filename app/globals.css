@@ -17,7 +17,7 @@
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] shadow-sm;
+    @apply bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#2D3748] shadow-sm;
   }
   .card-header {
     @apply flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800;

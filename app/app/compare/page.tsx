@@ -6,7 +6,7 @@ import {
   formatCurrency,
   formatLargeNumber,
   formatPercent,
-  getTrendSignal,
+  getRSISignal,
 } from '@/lib/utils';
 
 
@@ -16,6 +16,24 @@ function numWinner(a: number | null, b: number | null, higherIsBetter = true): 1
   if (diff < 0.01) return 0;
   return higherIsBetter ? (a > b ? 1 : 2) : (a < b ? 1 : 2);
 }
+
+const BULLISH_WORDS = ['bullish', 'positive', 'upside', 'outperform', 'strong momentum', 'uptrend', 'opportunity', 'growth', 'recommend', 'worth considering', 'buy', 'better opportunity'];
+const BEARISH_WORDS = ['bearish', 'negative', 'downside', 'underperform', 'weak', 'downtrend', 'caution', 'deteriorating', 'avoid', 'concerning'];
+
+function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
+  const lower = text.toLowerCase();
+  const bull = BULLISH_WORDS.filter(w => lower.includes(w)).length;
+  const bear = BEARISH_WORDS.filter(w => lower.includes(w)).length;
+  if (bull > bear) return 'bullish';
+  if (bear > bull) return 'bearish';
+  return 'neutral';
+}
+
+const SENTIMENT_CFG = {
+  bullish: { label: 'Worth Considering', bg: 'bg-[#1D9E75]/10', text: 'text-[#1D9E75]', border: 'border-[#1D9E75]/30' },
+  bearish: { label: 'Caution',           bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30' },
+  neutral: { label: 'Neutral',           bg: 'bg-yellow-500/10', text: 'text-yellow-500', border: 'border-yellow-500/30' },
+};
 
 function StockSearchInput({
   label,
@@ -67,40 +85,68 @@ function StockSearchInput({
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
         </button>
       </div>
-      {err && <p className="text-xs text-[#E24B4A] mt-1">{err}</p>}
+      {err && <p className="text-xs text-[#EF4444] mt-1">{err}</p>}
     </div>
   );
 }
 
 function StockHeader({ stock, colorClass }: { stock: StockData; colorClass: string }) {
-  const trend = getTrendSignal(stock.change1M);
+  const rsiSignal = getRSISignal(stock.rsi14);
+  const metrics = [
+    {
+      label: 'RSI (14)',
+      value: `${stock.rsi14} — ${rsiSignal === 'overbought' ? 'Overbought' : rsiSignal === 'oversold' ? 'Oversold' : 'Neutral'}`,
+      valueClass: rsiSignal === 'overbought' ? 'text-[#EF4444]' : rsiSignal === 'oversold' ? 'text-[#1D9E75]' : 'text-gray-700 dark:text-gray-300',
+    },
+    {
+      label: '1M Change',
+      value: formatPercent(stock.change1M),
+      valueClass: stock.change1M >= 0 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+    },
+    {
+      label: '3M Change',
+      value: formatPercent(stock.change3M),
+      valueClass: stock.change3M >= 0 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+    },
+    {
+      label: 'vs SMA 20',
+      value: stock.price >= stock.sma20 ? '▲ Above' : '▼ Below',
+      valueClass: stock.price >= stock.sma20 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+    },
+    {
+      label: 'vs SMA 50',
+      value: stock.price >= stock.sma50 ? '▲ Above' : '▼ Below',
+      valueClass: stock.price >= stock.sma50 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+    },
+  ];
+
   return (
-    <div className="text-center">
-      <p className={`text-lg font-bold ${colorClass}`}>{stock.symbol}</p>
-      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[140px] mx-auto">
-        {stock.name}
-      </p>
-      <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-        {formatCurrency(stock.price, stock.currency)}
-      </p>
-      <p
-        className={`text-sm font-semibold ${
-          stock.changePercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#E24B4A]'
-        }`}
-      >
-        {formatPercent(stock.changePercent)}
-      </p>
-      <span
-        className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-          trend === 'bullish'
-            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-            : trend === 'bearish'
-            ? 'bg-red-100 dark:bg-red-900/30 text-[#E24B4A]'
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-        }`}
-      >
-        {trend}
-      </span>
+    <div className="text-left">
+      {/* Ticker + Name */}
+      <div className="mb-2">
+        <p className={`text-2xl font-bold leading-tight ${colorClass}`}>{stock.symbol}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{stock.name}</p>
+      </div>
+      {/* Price + Change badge */}
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <p className="text-xl font-bold text-gray-900 dark:text-white">
+          {formatCurrency(stock.price, stock.currency)}
+        </p>
+        <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+          stock.changePercent >= 0 ? 'bg-[#1D9E75]/10 text-[#1D9E75]' : 'bg-[#EF4444]/10 text-[#EF4444]'
+        }`}>
+          {formatPercent(stock.changePercent)}
+        </span>
+      </div>
+      {/* Metrics list */}
+      <div className="space-y-1.5">
+        {metrics.map(m => (
+          <div key={m.label} className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-gray-400 dark:text-gray-500 shrink-0">{m.label}</span>
+            <span className={`text-xs font-semibold ${m.valueClass}`}>{m.value}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -110,6 +156,8 @@ interface Row {
   v1: string;
   v2: string;
   winner: 1 | 2 | 0;
+  rawNum1?: number | null;
+  rawNum2?: number | null;
 }
 
 function buildRows(s1: StockData, s2: StockData): Row[] {
@@ -119,12 +167,24 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
       v1: formatPercent(s1.change1M),
       v2: formatPercent(s2.change1M),
       winner: numWinner(s1.change1M, s2.change1M),
+      rawNum1: s1.change1M,
+      rawNum2: s2.change1M,
     },
     {
       label: '3-Month Change',
       v1: formatPercent(s1.change3M),
       v2: formatPercent(s2.change3M),
       winner: numWinner(s1.change3M, s2.change3M),
+      rawNum1: s1.change3M,
+      rawNum2: s2.change3M,
+    },
+    {
+      label: 'Today Change',
+      v1: formatPercent(s1.changePercent),
+      v2: formatPercent(s2.changePercent),
+      winner: numWinner(s1.changePercent, s2.changePercent),
+      rawNum1: s1.changePercent,
+      rawNum2: s2.changePercent,
     },
     {
       label: 'RSI (14)',
@@ -201,6 +261,17 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
   ];
 }
 
+function rowValueClass(row: Row, side: 1 | 2): string {
+  const raw = side === 1 ? row.rawNum1 : row.rawNum2;
+  if (raw != null) {
+    return raw >= 0 ? 'text-[#1D9E75]' : 'text-[#EF4444]';
+  }
+  const isWinner = row.winner === side;
+  return isWinner
+    ? (side === 1 ? 'text-blue-700 dark:text-blue-300' : 'text-purple-700 dark:text-purple-300')
+    : 'text-gray-700 dark:text-gray-300';
+}
+
 export default function ComparePage() {
   const [stock1, setStock1] = useState<StockData | null>(null);
   const [stock2, setStock2] = useState<StockData | null>(null);
@@ -230,6 +301,9 @@ export default function ComparePage() {
   const s1Wins = rows.filter(r => r.winner === 1).length;
   const s2Wins = rows.filter(r => r.winner === 2).length;
 
+  const verdictSentiment = verdict ? parseSentiment(verdict) : null;
+  const verdictBadge = verdictSentiment ? SENTIMENT_CFG[verdictSentiment] : null;
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
@@ -240,7 +314,7 @@ export default function ComparePage() {
 
         {/* Search inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] p-4">
             <StockSearchInput
               label="Stock 1"
               color="text-blue-600 dark:text-blue-400"
@@ -252,7 +326,7 @@ export default function ComparePage() {
               </div>
             )}
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] p-4">
             <StockSearchInput
               label="Stock 2"
               color="text-purple-600 dark:text-purple-400"
@@ -282,7 +356,7 @@ export default function ComparePage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] overflow-hidden mb-4">
               <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-xs font-semibold">
                 <span className="text-blue-600 dark:text-blue-400">{stock1.symbol}</span>
                 <span className="text-center w-8" />
@@ -297,13 +371,7 @@ export default function ComparePage() {
                     key={row.label}
                     className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
                   >
-                    <span
-                      className={`text-sm font-medium ${
-                        row.winner === 1
-                          ? 'text-blue-700 dark:text-blue-300'
-                          : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
+                    <span className={`text-sm font-medium ${rowValueClass(row, 1)}`}>
                       {row.v1}
                     </span>
                     <div className="flex justify-center w-8">
@@ -323,13 +391,7 @@ export default function ComparePage() {
                         <span />
                       )}
                     </div>
-                    <span
-                      className={`text-right text-sm font-medium ${
-                        row.winner === 2
-                          ? 'text-purple-700 dark:text-purple-300'
-                          : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
+                    <span className={`text-right text-sm font-medium ${rowValueClass(row, 2)}`}>
                       {row.v2}
                     </span>
                   </div>
@@ -338,13 +400,18 @@ export default function ComparePage() {
             </div>
 
             {/* AI Verdict */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Sparkles className="w-4 h-4 text-[#1D9E75]" />
                   <span className="font-semibold text-sm text-gray-900 dark:text-white">
                     AI Verdict
                   </span>
+                  {verdictBadge && !verdictLoading && (
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictBadge.bg} ${verdictBadge.text} ${verdictBadge.border}`}>
+                      {verdictBadge.label}
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={fetchVerdict}

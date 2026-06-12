@@ -327,7 +327,7 @@ function StockAnalysis() {
                 className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   activeTab === tab.id
                     ? 'bg-[#00A86B] text-white'
-                    : 'bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-500 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]'
+                    : 'bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-500 dark:text-[#9CA3AF] hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B]'
                 }`}
               >
                 {tab.label}
@@ -339,7 +339,7 @@ function StockAnalysis() {
               <button
                 key={s}
                 onClick={() => fetchStock(s)}
-                className="px-2.5 py-1 text-xs font-medium bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] rounded-md hover:border-[#00A86B] hover:text-[#00A86B] transition-colors"
+                className="px-2.5 py-1 text-xs font-medium bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] rounded-md hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B] transition-colors"
               >
                 {s.replace(':IDX', '')}
               </button>

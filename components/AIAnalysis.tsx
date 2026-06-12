@@ -12,6 +12,24 @@ const SECTIONS = [
   { key: 'keyRisk' as const,              label: 'Key Risk' },
 ];
 
+const BULLISH_WORDS = ['bullish', 'positive', 'upside', 'outperform', 'strong momentum', 'uptrend', 'opportunity', 'growth', 'recommend', 'worth considering', 'buy'];
+const BEARISH_WORDS = ['bearish', 'negative', 'downside', 'underperform', 'weak', 'downtrend', 'caution', 'deteriorating', 'avoid', 'concerning'];
+
+function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
+  const lower = text.toLowerCase();
+  const bull = BULLISH_WORDS.filter(w => lower.includes(w)).length;
+  const bear = BEARISH_WORDS.filter(w => lower.includes(w)).length;
+  if (bull > bear) return 'bullish';
+  if (bear > bull) return 'bearish';
+  return 'neutral';
+}
+
+const SENTIMENT_CFG = {
+  bullish: { label: 'Worth Considering', bg: 'bg-[#1D9E75]/10', text: 'text-[#1D9E75]', border: 'border-[#1D9E75]/30' },
+  bearish: { label: 'Caution',           bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30' },
+  neutral: { label: 'Neutral',           bg: 'bg-yellow-500/10', text: 'text-yellow-500', border: 'border-yellow-500/30' },
+};
+
 export default function AIAnalysis({ stockData }: Props) {
   const [analysis, setAnalysis] = useState<AIAnalysisType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,15 +56,25 @@ export default function AIAnalysis({ stockData }: Props) {
     }
   };
 
+  const sentiment = analysis
+    ? parseSentiment(`${analysis.trend} ${analysis.supportResistance} ${analysis.rsiMaInterpretation} ${analysis.keyRisk}`)
+    : null;
+  const sentimentCfg = sentiment ? SENTIMENT_CFG[sentiment] : null;
+
   return (
     <div className="card overflow-hidden">
       <div className="card-header">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Sparkles className="w-4 h-4 text-[#00A86B]" />
           <span className="card-title">AI Analysis</span>
           <span className="hidden sm:inline text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
             Llama 3.3
           </span>
+          {sentimentCfg && !loading && (
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${sentimentCfg.bg} ${sentimentCfg.text} ${sentimentCfg.border}`}>
+              {sentimentCfg.label}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {analysis && !loading && (
