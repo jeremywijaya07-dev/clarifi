@@ -9,6 +9,7 @@ import {
   getRSISignal,
 } from '@/lib/utils';
 import TickerAutocomplete from '@/components/TickerAutocomplete';
+import { useLanguage } from '@/lib/useLanguage';
 
 
 function numWinner(a: number | null, b: number | null, higherIsBetter = true): 1 | 2 | 0 {
@@ -18,8 +19,18 @@ function numWinner(a: number | null, b: number | null, higherIsBetter = true): 1
   return higherIsBetter ? (a > b ? 1 : 2) : (a < b ? 1 : 2);
 }
 
-const BULLISH_WORDS = ['bullish', 'positive', 'upside', 'outperform', 'strong momentum', 'uptrend', 'opportunity', 'growth', 'recommend', 'worth considering', 'buy', 'better opportunity'];
-const BEARISH_WORDS = ['bearish', 'negative', 'downside', 'underperform', 'weak', 'downtrend', 'caution', 'deteriorating', 'avoid', 'concerning'];
+const BULLISH_WORDS = [
+  'bullish', 'positive', 'upside', 'outperform', 'strong momentum', 'uptrend',
+  'opportunity', 'growth', 'recommend', 'worth considering', 'buy', 'better opportunity',
+  'positif', 'naik', 'kuat', 'peluang', 'tumbuh', 'direkomendasikan', 'layak',
+  'tren naik', 'momentum naik', 'meningkat',
+];
+const BEARISH_WORDS = [
+  'bearish', 'negative', 'downside', 'underperform', 'weak', 'downtrend',
+  'caution', 'deteriorating', 'avoid', 'concerning',
+  'negatif', 'turun', 'lemah', 'risiko', 'waspada', 'hati-hati',
+  'melemah', 'tren turun', 'tekanan jual', 'koreksi',
+];
 
 function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
   const lower = text.toLowerCase();
@@ -31,9 +42,30 @@ function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
 }
 
 const SENTIMENT_CFG = {
-  bullish: { label: 'Worth Considering', bg: 'bg-[#1D9E75]/10', text: 'text-[#1D9E75]', border: 'border-[#1D9E75]/30' },
-  bearish: { label: 'Caution',           bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30' },
-  neutral: { label: 'Neutral',           bg: 'bg-yellow-500/10', text: 'text-yellow-500', border: 'border-yellow-500/30' },
+  bullish: { bg: 'bg-[#1D9E75]/10', text: 'text-[#1D9E75]', border: 'border-[#1D9E75]/30' },
+  bearish: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30' },
+  neutral: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', border: 'border-yellow-500/30' },
+};
+
+const VERDICT_T = {
+  en: {
+    title: 'AI Verdict',
+    get: 'Get Verdict',
+    refresh: 'Refresh',
+    analyzing: 'Analyzing…',
+    empty: 'Click Get Verdict for AI analysis comparing both stocks',
+    badge: { bullish: 'Worth Considering', bearish: 'Caution', neutral: 'Neutral' },
+    langBtn: '🇺🇸 EN',
+  },
+  id: {
+    title: 'Verdict AI',
+    get: 'Dapatkan Verdict',
+    refresh: 'Refresh',
+    analyzing: 'Menganalisis…',
+    empty: 'Klik Dapatkan Verdict untuk analisis AI perbandingan kedua saham',
+    badge: { bullish: 'Layak Dipertimbangkan', bearish: 'Hati-hati', neutral: 'Netral' },
+    langBtn: '🇮🇩 ID',
+  },
 };
 
 function StockSearchInput({
@@ -279,6 +311,9 @@ export default function ComparePage() {
   const [stock2, setStock2] = useState<StockData | null>(null);
   const [verdict, setVerdict] = useState<string | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
+  const [lang, setLang] = useLanguage();
+
+  const vt = VERDICT_T[lang];
 
   const fetchVerdict = async () => {
     if (!stock1 || !stock2) return;
@@ -288,7 +323,7 @@ export default function ComparePage() {
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'compare', stock1Data: stock1, stock2Data: stock2 }),
+        body: JSON.stringify({ type: 'compare', stock1Data: stock1, stock2Data: stock2, language: lang }),
       });
       const data = await res.json();
       setVerdict(data.verdict ?? '');
@@ -304,7 +339,8 @@ export default function ComparePage() {
   const s2Wins = rows.filter(r => r.winner === 2).length;
 
   const verdictSentiment = verdict ? parseSentiment(verdict) : null;
-  const verdictBadge = verdictSentiment ? SENTIMENT_CFG[verdictSentiment] : null;
+  const verdictBadgeCfg   = verdictSentiment ? SENTIMENT_CFG[verdictSentiment] : null;
+  const verdictBadgeLabel = verdictSentiment ? vt.badge[verdictSentiment] : null;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
@@ -407,31 +443,40 @@ export default function ComparePage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Sparkles className="w-4 h-4 text-[#1D9E75]" />
                   <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                    AI Verdict
+                    {vt.title}
                   </span>
-                  {verdictBadge && !verdictLoading && (
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictBadge.bg} ${verdictBadge.text} ${verdictBadge.border}`}>
-                      {verdictBadge.label}
+                  {verdictBadgeCfg && verdictBadgeLabel && !verdictLoading && (
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${verdictBadgeCfg.bg} ${verdictBadgeCfg.text} ${verdictBadgeCfg.border}`}>
+                      {verdictBadgeLabel}
                     </span>
                   )}
                 </div>
-                <button
-                  onClick={fetchVerdict}
-                  disabled={verdictLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1D9E75] hover:bg-[#178a65] disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
-                >
-                  {verdictLoading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Analyzing…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      {verdict ? 'Refresh' : 'Get Verdict'}
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setLang(lang === 'id' ? 'en' : 'id')}
+                    title={lang === 'id' ? 'Switch to English' : 'Ganti ke Indonesia'}
+                    className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 dark:border-[#2D3748] text-gray-500 dark:text-gray-400 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+                  >
+                    {vt.langBtn}
+                  </button>
+                  <button
+                    onClick={fetchVerdict}
+                    disabled={verdictLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1D9E75] hover:bg-[#178a65] disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    {verdictLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        {vt.analyzing}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {verdict ? vt.refresh : vt.get}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {verdict ? (
@@ -447,7 +492,7 @@ export default function ComparePage() {
                 </div>
               ) : !verdictLoading ? (
                 <div className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-                  Click <strong>Get Verdict</strong> for AI analysis comparing both stocks
+                  {vt.empty}
                 </div>
               ) : null}
             </div>
