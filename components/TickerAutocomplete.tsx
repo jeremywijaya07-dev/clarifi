@@ -9,13 +9,15 @@ interface DropdownItem {
   exchange: string;
 }
 
+const normalize = (sym: string) => sym.replace(/:IDX$/i, '');
+
 function mergeResults(staticR: DropdownItem[], liveR: DropdownItem[], limit = 8): DropdownItem[] {
-  const seen = new Set(staticR.map(r => r.symbol));
+  const seen = new Set(staticR.map(r => normalize(r.symbol)));
   const out = [...staticR];
   for (const r of liveR) {
-    if (!seen.has(r.symbol) && out.length < limit) {
+    if (!seen.has(normalize(r.symbol)) && out.length < limit) {
       out.push(r);
-      seen.add(r.symbol);
+      seen.add(normalize(r.symbol));
     }
   }
   return out;
