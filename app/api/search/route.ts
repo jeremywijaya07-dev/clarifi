@@ -8,12 +8,8 @@ interface YahooQuote {
   quoteType: string;
 }
 
-const SKIP_TYPES = new Set([
-  'CURRENCY', 'CRYPTOCURRENCY', 'INDEX', 'MUTUALFUND', 'FUTURE', 'OPTION',
-]);
-
 const US_EXCHANGES = new Set([
-  'NMS', 'NYQ', 'NGM', 'PCX', 'ASE', 'BTS', 'OTC', 'PNK',
+  'NMS', 'NYQ', 'NGM', 'NCM', 'NIM', 'ASE', 'BTS', 'PCX',
 ]);
 
 export async function GET(request: NextRequest) {
@@ -41,24 +37,15 @@ export async function GET(request: NextRequest) {
       data.quotes ?? data.finance?.result?.[0]?.quotes ?? [];
 
     const results = quotes
-      .filter((q) => !SKIP_TYPES.has(q.quoteType))
+      .filter((q) => q.symbol.endsWith('.JK') || US_EXCHANGES.has(q.exchange))
       .map((q) => {
         const name = (q.shortname || q.longname || q.symbol).trim();
 
         if (q.symbol.endsWith('.JK')) {
-          return {
-            symbol: q.symbol.replace('.JK', ':IDX'),
-            name,
-            exchange: 'IDX',
-          };
+          return { symbol: q.symbol.replace('.JK', ':IDX'), name, exchange: 'IDX' };
         }
 
-        const exchangeLabel = US_EXCHANGES.has(q.exchange) ? 'US' : q.exchange;
-        return {
-          symbol: q.symbol,
-          name,
-          exchange: exchangeLabel,
-        };
+        return { symbol: q.symbol, name, exchange: 'US' };
       });
 
     return NextResponse.json(results);
