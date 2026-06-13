@@ -448,8 +448,8 @@ function StockAnalysis() {
 
               {/* Chart */}
               <div className="card p-4">
-                <h2 className="card-title mb-3">Price History — 90 Days</h2>
-                <PriceChart data={stock.priceHistory} currency={stock.currency} />
+                <h2 className="card-title mb-3">Price Chart</h2>
+                <PriceChart data={stock.priceHistory} currency={stock.currency} symbol={stock.symbol} />
               </div>
 
               {/* Technical indicators */}
