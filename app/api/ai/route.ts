@@ -9,41 +9,63 @@ function buildAnalysisPrompt(stock: StockData, lang: 'id' | 'en'): string {
   const rsiLabel   = stock.rsi14 > 70 ? 'OVERBOUGHT' : stock.rsi14 < 30 ? 'OVERSOLD' : 'NEUTRAL';
   const vsMA20     = stock.price >= stock.sma20 ? 'above' : 'below';
   const vsMA50     = stock.price >= stock.sma50 ? 'above' : 'below';
-  const mktCap     = stock.marketCap ? `$${(stock.marketCap / 1e9).toFixed(2)}B` : 'N/A';
+  const mktCap     = stock.marketCap
+    ? stock.currency === 'IDR'
+      ? `Rp${(stock.marketCap / 1e12).toFixed(2)}T`
+      : `$${(stock.marketCap / 1e9).toFixed(2)}B`
+    : 'N/A';
+
+  const isIDR    = stock.currency === 'IDR';
+  const naIDX    = isIDR ? 'Tidak tersedia (IDX)' : 'N/A';
+  const peLabel  = stock.peRatio != null ? stock.peRatio.toFixed(2)  : naIDX;
+  const epsLabel = stock.eps     != null ? stock.eps.toFixed(2)       : naIDX;
+  const betaLbl  = stock.beta    != null ? stock.beta.toFixed(2)      : naIDX;
 
   const data = `Stock: ${stock.name} (${stock.symbol}) — ${stock.exchange}
 Price: ${stock.currency} ${stock.price.toFixed(2)} | Daily: ${stock.changePercent.toFixed(2)}%
 1-Month Change: ${stock.change1M.toFixed(2)}% (${trendLabel}) | 3-Month Change: ${stock.change3M.toFixed(2)}%
-RSI(14): ${stock.rsi14} (${rsiLabel})
+RSI(14): ${stock.rsi14.toFixed(1)} (${rsiLabel})
 SMA20: ${stock.sma20.toFixed(2)} — price is ${vsMA20} SMA20
 SMA50: ${stock.sma50.toFixed(2)} — price is ${vsMA50} SMA50
 Relative Volume: ${stock.relativeVolume}x
 20-Day High: ${stock.high20d.toFixed(2)} | 20-Day Low: ${stock.low20d.toFixed(2)}
 52-Week High: ${stock.high52w.toFixed(2)} | 52-Week Low: ${stock.low52w.toFixed(2)}
-Market Cap: ${mktCap} | P/E: ${stock.peRatio?.toFixed(2) ?? 'N/A'} | EPS: ${stock.eps?.toFixed(2) ?? 'N/A'}
-Beta: ${stock.beta?.toFixed(2) ?? 'N/A'} | Sector: ${stock.sector ?? 'N/A'}`;
+Market Cap: ${mktCap} | P/E: ${peLabel} | EPS: ${epsLabel}
+Beta: ${betaLbl} | Sector: ${stock.sector ?? 'N/A'}`;
 
   if (lang === 'id') {
     return `Kamu adalah analis saham profesional. Analisis data berikut dan tulis tepat 4 paragraf ringkas — tanpa header, tanpa bullet point, tanpa markdown, hanya 4 paragraf teks biasa yang dipisahkan baris kosong. Gunakan bahasa Indonesia dengan terminologi trading yang lazim (boleh campur istilah teknikal Inggris seperti support, resistance, bullish, bearish, dll).
 
 ${data}
 
+ATURAN GROUNDING (WAJIB DIIKUTI — TANPA PENGECUALIAN):
+- Setiap klaim tren (naik/turun/sideways) WAJIB menyebutkan angka persentase persis dari data di atas
+- Jika suatu nilai data adalah N/A atau 0, tulis "data tidak tersedia" — JANGAN mengarang angka
+- JANGAN menulis klaim vague tanpa angka (contoh DILARANG: "saham terlihat lemah" tanpa menyebut RSI atau persentase)
+- Kesimpulan sentimen (BULLISH/BEARISH/NEUTRAL) WAJIB disertai minimal 2 data poin numerik sebagai dasar di kalimat yang sama
+
 Tulis tepat 4 paragraf:
-Paragraf 1 (Tren & Momentum): Tren dan momentum saat ini dari performa 1B/3B dan posisi SMA. 3-4 kalimat.
-Paragraf 2 (Support & Resistance): Level support dan resistance kunci menggunakan data 20 hari dan 52 minggu. Sebutkan harga spesifik.
-Paragraf 3 (RSI & Moving Average): Interpretasikan RSI dan hubungan SMA20/SMA50 serta implikasinya untuk arah jangka pendek.
-Paragraf 4 (Risiko Utama): Satu risiko spesifik dan konkret untuk saham ini berdasarkan data saat ini.`;
+Paragraf 1 (Tren & Momentum): Sebutkan perubahan 1 bulan PERSIS (${stock.change1M.toFixed(2)}%) dan perubahan 3 bulan PERSIS (${stock.change3M.toFixed(2)}%). Nyatakan posisi harga saat ini (${stock.price.toFixed(2)}) terhadap SMA20 (${stock.sma20.toFixed(2)}) dan SMA50 (${stock.sma50.toFixed(2)}) dengan angka tepat tersebut. Akhiri paragraf ini dengan kesimpulan sentimen (BULLISH/BEARISH/NEUTRAL) yang disertai 2 data poin numerik sebagai dasar.
+Paragraf 2 (Support & Resistance): WAJIB sebutkan keempat level harga ini secara eksplisit: 20-Day Low ${stock.low20d.toFixed(2)}, 20-Day High ${stock.high20d.toFixed(2)}, 52-Week Low ${stock.low52w.toFixed(2)}, 52-Week High ${stock.high52w.toFixed(2)}. Jelaskan implikasinya terhadap harga saat ini (${stock.price.toFixed(2)}).
+Paragraf 3 (RSI & Moving Average): WAJIB tulis nilai RSI persis: "RSI(14) saat ini berada di ${stock.rsi14.toFixed(1)}" dan klasifikasikan (overbought >70, oversold <30, netral di antara). Bandingkan harga (${stock.price.toFixed(2)}) vs SMA20 (${stock.sma20.toFixed(2)}) dan SMA50 (${stock.sma50.toFixed(2)}) dengan angka tepat dan jelaskan implikasinya.
+Paragraf 4 (Risiko Utama): Satu risiko spesifik dan konkret untuk saham ini, dengan minimal satu angka dari data di atas sebagai dasar. Bukan pernyataan umum.`;
   }
 
   return `You are a professional stock analyst. Analyze the following data and write exactly 4 concise paragraphs — no headers, no bullet points, no markdown, just 4 plain paragraphs separated by a blank line.
 
 ${data}
 
+GROUNDING REQUIREMENTS (MANDATORY — NO EXCEPTIONS):
+- Every trend claim MUST quote the exact percentage from the data above
+- If any data value is N/A or 0, write "data unavailable" — do NOT fabricate numbers
+- NEVER write vague claims without numbers (example FORBIDDEN: "the stock looks weak" without citing RSI or change %)
+- Any sentiment conclusion (BULLISH/BEARISH/NEUTRAL) MUST be backed by at least 2 specific numerical data points in the same sentence
+
 Write exactly 4 paragraphs:
-Paragraph 1 (Trend & Momentum): Current trend and momentum from 1M/3M performance and SMA positioning. 3-4 sentences.
-Paragraph 2 (Support & Resistance): Specific key support and resistance levels using the 20-day and 52-week data. Name exact prices.
-Paragraph 3 (RSI & Moving Averages): Interpret the RSI and SMA20/SMA50 relationship and what it implies for near-term direction.
-Paragraph 4 (Key Risk): One specific, concrete risk for this stock right now based on the data.`;
+Paragraph 1 (Trend & Momentum): Quote the exact 1M change (${stock.change1M.toFixed(2)}%) and exact 3M change (${stock.change3M.toFixed(2)}%). State the current price (${stock.price.toFixed(2)}) vs SMA20 (${stock.sma20.toFixed(2)}) and SMA50 (${stock.sma50.toFixed(2)}) with those exact numbers. End this paragraph with a sentiment conclusion (BULLISH/BEARISH/NEUTRAL) backed by those 2 specific numerical data points.
+Paragraph 2 (Support & Resistance): MUST explicitly name all four levels: 20-Day Low ${stock.low20d.toFixed(2)}, 20-Day High ${stock.high20d.toFixed(2)}, 52-Week Low ${stock.low52w.toFixed(2)}, 52-Week High ${stock.high52w.toFixed(2)}. Explain what each implies for the current price (${stock.price.toFixed(2)}).
+Paragraph 3 (RSI & Moving Averages): MUST write the exact RSI value: "RSI(14) is currently at ${stock.rsi14.toFixed(1)}" and classify it (overbought >70, oversold <30, neutral otherwise). Compare price (${stock.price.toFixed(2)}) to SMA20 (${stock.sma20.toFixed(2)}) and SMA50 (${stock.sma50.toFixed(2)}) with exact numbers and explain the near-term implication.
+Paragraph 4 (Key Risk): One specific, concrete risk for this stock backed by at least one exact number from the data above. Not a generic statement.`;
 }
 
 function buildComparePrompt(s1: StockData, s2: StockData, lang: 'id' | 'en'): string {

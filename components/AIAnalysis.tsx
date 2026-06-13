@@ -4,6 +4,48 @@ import { Sparkles, RefreshCw, Loader2, ChevronDown, ChevronUp } from 'lucide-rea
 import { StockData, AIAnalysis as AIAnalysisType } from '@/lib/types';
 import { useLanguage } from '@/lib/useLanguage';
 
+function fmtBadgePrice(n: number, currency: string): string {
+  if (!n || n <= 0) return 'N/A';
+  if (currency === 'IDR') return `Rp${Math.round(n).toLocaleString('id-ID')}`;
+  return `$${n.toFixed(2)}`;
+}
+
+function fmtBadgePct(n: number): string {
+  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+}
+
+function getSectionBadges(key: typeof SECTION_KEYS[number], stock: StockData): string[] {
+  const p = (n: number) => fmtBadgePrice(n, stock.currency);
+  switch (key) {
+    case 'trend':
+      return [
+        `1M: ${fmtBadgePct(stock.change1M)}`,
+        `3M: ${fmtBadgePct(stock.change3M)}`,
+        `SMA20: ${p(stock.sma20)}`,
+        `SMA50: ${p(stock.sma50)}`,
+      ];
+    case 'supportResistance':
+      return [
+        `Support 20D: ${p(stock.low20d)}`,
+        `Resistance 20D: ${p(stock.high20d)}`,
+        `52W Low: ${p(stock.low52w)}`,
+        `52W High: ${p(stock.high52w)}`,
+      ];
+    case 'rsiMaInterpretation':
+      return [
+        `RSI: ${stock.rsi14.toFixed(1)}`,
+        `SMA20: ${p(stock.sma20)}`,
+        `SMA50: ${p(stock.sma50)}`,
+      ];
+    case 'keyRisk':
+      return [
+        `RSI: ${stock.rsi14.toFixed(1)}`,
+        `RelVol: ${stock.relativeVolume.toFixed(2)}x`,
+        ...(stock.beta != null ? [`Beta: ${stock.beta.toFixed(2)}`] : []),
+      ];
+  }
+}
+
 interface Props { stockData: StockData; }
 
 const BULLISH_WORDS = [
@@ -48,6 +90,7 @@ const T = {
       keyRisk:             'Key Risk',
     },
     badge: { bullish: 'Worth Considering', bearish: 'Caution', neutral: 'Neutral' },
+    dataUsed: 'Data used',
     langBtn: '🇺🇸 EN',
   },
   id: {
@@ -63,6 +106,7 @@ const T = {
       keyRisk:             'Risiko Utama',
     },
     badge: { bullish: 'Layak Dipertimbangkan', bearish: 'Hati-hati', neutral: 'Netral' },
+    dataUsed: 'Data digunakan',
     langBtn: '🇮🇩 ID',
   },
 };
@@ -181,12 +225,23 @@ export default function AIAnalysis({ stockData }: Props) {
 
       {analysis && !collapsed && !loading && (
         <div className="divide-y divide-gray-100 dark:divide-gray-800 animate-fade-in">
-          {SECTION_KEYS.map(key => (
-            <div key={key} className="px-4 py-3">
-              <p className="metric-label mb-1.5">{t.sections[key]}</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{analysis[key]}</p>
-            </div>
-          ))}
+          {SECTION_KEYS.map(key => {
+            const badges = getSectionBadges(key, stockData);
+            return (
+              <div key={key} className="px-4 py-3">
+                <p className="metric-label mb-1.5">{t.sections[key]}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{analysis[key]}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-1">
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-0.5">{t.dataUsed}:</span>
+                  {badges.map((badge, i) => (
+                    <span key={i} className="inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700/60 text-gray-500 dark:text-gray-400">
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

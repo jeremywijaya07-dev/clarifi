@@ -81,8 +81,9 @@ async function fetchFMPProfile(symbol: string): Promise<Record<string, any> | nu
   const apiKey = process.env.FMP_API_KEY;
   if (!apiKey) return null;
 
-  // Strip any suffix (.JK, :IDX) — FMP uses bare tickers for all exchanges
-  const sym = symbol.toUpperCase().replace(/:IDX$/i, '').replace(/\.JK$/i, '');
+  // Keep .JK suffix for IDX stocks — FMP recognises BBCA.JK correctly.
+  // Only strip the Clarifi-internal :IDX notation if present.
+  const sym = symbol.toUpperCase().replace(/:IDX$/i, '');
 
   try {
     const res = await fetch(
@@ -99,7 +100,7 @@ async function fetchFMPProfile(symbol: string): Promise<Record<string, any> | nu
   }
 }
 
-// Extract fundamentals from an FMP profile object (null-safe)
+// Extract fundamentals from an FMP profile object for US stocks (null-safe)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseFMPFundamentals(profile: Record<string, any> | null) {
   if (!profile) return { eps: null, beta: null, sector: null, industry: null, dividendYield: null, marketCap: null, peRatio: null, bookValue: null };
@@ -108,10 +109,23 @@ function parseFMPFundamentals(profile: Record<string, any> | null) {
     beta:          parseNum(profile.beta)             ?? null,
     sector:        (profile.sector  as string | undefined) || null,
     industry:      (profile.industry as string | undefined) || null,
-    dividendYield: parseNum(profile.lastDiv)          ?? null,
-    marketCap:     parseNum(profile.mktCap)           ?? null,
+    dividendYield: parseNum(profile.lastDividend)     ?? null,   // FMP stable returns "lastDividend"
+    marketCap:     parseNum(profile.marketCap)        ?? null,   // FMP stable returns "marketCap", not "mktCap"
     peRatio:       parseNum(profile.pe)               ?? null,
     bookValue:     parseNum(profile.bookValuePerShare) ?? null,
+  };
+}
+
+// Extract only the fields FMP reliably provides for IDX (.JK) stocks.
+// PE, EPS, dividendYield, beta are intentionally omitted — FMP does not
+// carry these for Indonesian equities and the beta values are nonsensical.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseFMPFundamentalsIDX(profile: Record<string, any> | null) {
+  if (!profile) return { sector: null, industry: null, marketCap: null };
+  return {
+    sector:    (profile.sector   as string | undefined) || null,
+    industry:  (profile.industry as string | undefined) || null,
+    marketCap: parseNum(profile.marketCap) ?? null,
   };
 }
 
@@ -129,35 +143,6 @@ const YAHOO_CHART_HEADERS = {
   'Accept': 'application/json, */*',
 };
 
-const MODULES = 'summaryDetail,defaultKeyStatistics,financialData,assetProfile';
-
-// Try query2 → query1 v10 → query1 v11 until we get a valid result
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchQuoteSummary(symbol: string): Promise<Record<string, any> | null> {
-  const enc = encodeURIComponent(symbol);
-  const urls = [
-    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${enc}?modules=${MODULES}`,
-    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${enc}?modules=${MODULES}`,
-    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${enc}?modules=${MODULES}`,
-  ];
-
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, {
-        headers: YAHOO_FETCH_HEADERS,
-        signal: AbortSignal.timeout(6000),
-      });
-      if (!res.ok) continue;
-      const json = await res.json();
-      const result = json?.quoteSummary?.result?.[0];
-      if (result && Object.keys(result).length > 0) return result;
-    } catch {
-      // try next URL
-    }
-  }
-  return null;
-}
-
 // Convert any IDX format (BBRI:IDX or bare BBRI) to Yahoo .JK symbol
 function toYahooSym(symbol: string): string {
   return symbol.toUpperCase().replace(/:IDX$/i, '') + '.JK';
@@ -169,14 +154,14 @@ async function fetchYahooStock(origSymbol: string): Promise<StockData> {
   const yahooSym   = toYahooSym(origSymbol);
   const displaySym = origSymbol.toUpperCase();
 
-  // For IDX stocks: Yahoo Finance handles both price chart AND fundamentals.
-  // FMP does not carry Indonesian exchange data, so we skip it here.
-  const [chartRes, qs] = await Promise.all([
+  // Yahoo quoteSummary now requires a crumb/session cookie that cannot be
+  // obtained server-side. Use FMP (with .JK suffix) for IDX fundamentals instead.
+  const [chartRes, fmpProfile] = await Promise.all([
     fetch(
       `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=1d&range=3mo`,
       { headers: YAHOO_CHART_HEADERS },
     ),
-    fetchQuoteSummary(yahooSym),
+    fetchFMPProfile(yahooSym),
   ]);
 
   if (!chartRes.ok) throw new Error(`Yahoo Finance returned ${chartRes.status} for ${yahooSym}`);
@@ -227,18 +212,12 @@ async function fetchYahooStock(origSymbol: string): Promise<StockData> {
   const high20d = round2(Math.max(...last20));
   const low20d  = round2(Math.min(...last20));
 
-  // Yahoo quoteSummary is the sole fundamentals source for IDX stocks.
-  // Values come back as { raw: number, fmt: string } objects — use .raw directly.
-  const eps          = qs?.financialData?.epsTrailingTwelveMonths?.raw       ?? parseNum(meta.epsTrailingTwelveMonths) ?? null;
-  const beta         = qs?.defaultKeyStatistics?.beta?.raw                   ?? null;
-  const sector       = (qs?.assetProfile?.sector as string | undefined)      ?? null;
-  const industry     = (qs?.assetProfile?.industry as string | undefined)    ?? null;
-  const dividendYield= qs?.summaryDetail?.trailingAnnualDividendYield?.raw   ?? qs?.summaryDetail?.dividendYield?.raw ?? null;
-  const marketCap    = qs?.summaryDetail?.marketCap?.raw                     ?? parseNum(meta.marketCap) ?? null;
-  const peRatio      = qs?.summaryDetail?.trailingPE?.raw                    ?? qs?.defaultKeyStatistics?.trailingPE?.raw ?? parseNum(meta.trailingPE) ?? null;
-  const bookValue    = qs?.defaultKeyStatistics?.bookValue?.raw              ?? null;
+  // FMP (with .JK suffix) provides sector, industry, marketCap for IDX stocks.
+  // PE, EPS, beta, dividendYield are NOT reliably available for IDX via any
+  // free data source — keep them null so the UI shows an explicit IDX message.
+  const fmp = parseFMPFundamentalsIDX(fmpProfile);
 
-  console.log('Fundamentals parsed (IDX):', { source: qs ? 'Yahoo quoteSummary' : 'chart meta only', eps, beta, sector, dividendYield, bookValue });
+  console.log('Fundamentals parsed (IDX):', { source: fmpProfile ? 'FMP' : 'none', ...fmp });
 
   return {
     symbol:        displaySym,
@@ -256,18 +235,18 @@ async function fetchYahooStock(origSymbol: string): Promise<StockData> {
     volume:        currentVolume,
     avgVolume20,
     relativeVolume,
-    marketCap,
-    peRatio,
-    eps,
-    beta,
-    dividendYield,
-    sector,
-    industry,
-    high52w:       round2(qs?.summaryDetail?.fiftyTwoWeekHigh?.raw ?? meta.fiftyTwoWeekHigh ?? 0),
-    low52w:        round2(qs?.summaryDetail?.fiftyTwoWeekLow?.raw  ?? meta.fiftyTwoWeekLow  ?? 0),
+    marketCap:     fmp.marketCap,
+    peRatio:       null,
+    eps:           null,
+    beta:          null,
+    dividendYield: null,
+    sector:        fmp.sector,
+    industry:      fmp.industry,
+    high52w:       round2(meta.fiftyTwoWeekHigh ?? 0),
+    low52w:        round2(meta.fiftyTwoWeekLow  ?? 0),
     high20d,
     low20d,
-    bookValue,
+    bookValue:     null,
     priceHistory,
   };
 }

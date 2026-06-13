@@ -12,6 +12,21 @@ import TickerAutocomplete from '@/components/TickerAutocomplete';
 import { useLanguage } from '@/lib/useLanguage';
 
 
+function isIDXStock(stock: StockData): boolean {
+  return stock.currency === 'IDR' ||
+    stock.exchange === 'JKT' ||
+    stock.exchange?.toLowerCase().includes('indonesia');
+}
+
+function fmtFundamental(
+  value: number | null,
+  stock: StockData,
+  formatter: (n: number) => string,
+): string {
+  if (value != null) return formatter(value);
+  return isIDXStock(stock) ? 'Tdk tersedia (IDX)' : 'N/A';
+}
+
 function numWinner(a: number | null, b: number | null, higherIsBetter = true): 1 | 2 | 0 {
   if (a == null || b == null) return 0;
   const diff = Math.abs(a - b);
@@ -244,20 +259,20 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
     },
     {
       label: 'P/E Ratio',
-      v1: s1.peRatio?.toFixed(2) ?? 'N/A',
-      v2: s2.peRatio?.toFixed(2) ?? 'N/A',
+      v1: fmtFundamental(s1.peRatio, s1, n => n.toFixed(2)),
+      v2: fmtFundamental(s2.peRatio, s2, n => n.toFixed(2)),
       winner: numWinner(s1.peRatio, s2.peRatio, false),
     },
     {
       label: 'EPS (TTM)',
-      v1: s1.eps != null ? `${s1.currency === 'IDR' ? 'Rp' : '$'}${s1.eps.toFixed(2)}` : 'N/A',
-      v2: s2.eps != null ? `${s2.currency === 'IDR' ? 'Rp' : '$'}${s2.eps.toFixed(2)}` : 'N/A',
+      v1: fmtFundamental(s1.eps, s1, n => `${s1.currency === 'IDR' ? 'Rp' : '$'}${n.toFixed(2)}`),
+      v2: fmtFundamental(s2.eps, s2, n => `${s2.currency === 'IDR' ? 'Rp' : '$'}${n.toFixed(2)}`),
       winner: numWinner(s1.eps, s2.eps),
     },
     {
       label: 'Beta',
-      v1: s1.beta?.toFixed(2) ?? 'N/A',
-      v2: s2.beta?.toFixed(2) ?? 'N/A',
+      v1: fmtFundamental(s1.beta, s1, n => n.toFixed(2)),
+      v2: fmtFundamental(s2.beta, s2, n => n.toFixed(2)),
       winner: 0,
     },
     {

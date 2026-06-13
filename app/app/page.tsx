@@ -175,6 +175,12 @@ function ChangeChip({ value, label }: { value: number; label: string }) {
   );
 }
 
+function isIDXStock(stock: StockData): boolean {
+  return stock.currency === 'IDR' ||
+    stock.exchange === 'JKT' ||
+    stock.exchange?.toLowerCase().includes('indonesia');
+}
+
 function MetricBox({ label, value, sub, subColor }: { label: string; value: string | number; sub?: string; subColor?: string }) {
   return (
     <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-3">
@@ -495,27 +501,43 @@ function StockAnalysis() {
               </div>
 
               {/* Fundamentals */}
-              {hasFundamentals && (
-                <div className="card p-4">
-                  <h2 className="card-title mb-3">Fundamentals</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <MetricBox label="Market Cap" value={formatLargeNumber(stock.marketCap, stock.currency)} />
-                    <MetricBox label="P/E Ratio"  value={stock.peRatio != null ? stock.peRatio.toFixed(2) : 'N/A'} />
-                    <MetricBox
-                      label="EPS (TTM)"
-                      value={stock.eps != null
-                        ? `${stock.currency === 'IDR' ? 'Rp' : '$'}${stock.eps.toFixed(2)}`
-                        : 'N/A'}
-                    />
-                    <MetricBox label="Beta" value={stock.beta != null ? stock.beta.toFixed(2) : 'N/A'} />
-                    <MetricBox
-                      label="Div. Yield"
-                      value={stock.dividendYield != null ? `${(stock.dividendYield * 100).toFixed(2)}%` : 'N/A'}
-                    />
-                    <MetricBox label="Sector" value={stock.sector ?? 'N/A'} />
+              {hasFundamentals && (() => {
+                const isIDX = isIDXStock(stock);
+                const idxNote = 'Tidak tersedia untuk saham IDX';
+                return (
+                  <div className="card p-4">
+                    <h2 className="card-title mb-3">Fundamentals</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <MetricBox label="Market Cap" value={formatLargeNumber(stock.marketCap, stock.currency)} />
+                      <MetricBox
+                        label="P/E Ratio"
+                        value={stock.peRatio != null ? stock.peRatio.toFixed(2) : '—'}
+                        sub={stock.peRatio == null && isIDX ? idxNote : undefined}
+                        subColor="text-[#9CA3AF]"
+                      />
+                      <MetricBox
+                        label="EPS (TTM)"
+                        value={stock.eps != null
+                          ? `${stock.currency === 'IDR' ? 'Rp' : '$'}${stock.eps.toFixed(2)}`
+                          : '—'}
+                        sub={stock.eps == null && isIDX ? idxNote : undefined}
+                        subColor="text-[#9CA3AF]"
+                      />
+                      <MetricBox
+                        label="Beta"
+                        value={stock.beta != null ? stock.beta.toFixed(2) : '—'}
+                        sub={stock.beta == null && isIDX ? idxNote : undefined}
+                        subColor="text-[#9CA3AF]"
+                      />
+                      <MetricBox
+                        label="Div. Yield"
+                        value={stock.dividendYield != null ? `${(stock.dividendYield * 100).toFixed(2)}%` : 'N/A'}
+                      />
+                      <MetricBox label="Sector" value={stock.sector ?? 'N/A'} />
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Fair Value */}
               <FairValueCard stock={stock} />
