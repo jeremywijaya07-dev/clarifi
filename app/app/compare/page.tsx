@@ -258,6 +258,18 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
       winner: numWinner(s1.marketCap, s2.marketCap),
     },
     {
+      label: 'Sector',
+      v1: s1.sector ?? 'N/A',
+      v2: s2.sector ?? 'N/A',
+      winner: 0,
+    },
+    {
+      label: 'Industry',
+      v1: s1.industry ?? 'N/A',
+      v2: s2.industry ?? 'N/A',
+      winner: 0,
+    },
+    {
       label: 'P/E Ratio',
       v1: fmtFundamental(s1.peRatio, s1, n => n.toFixed(2)),
       v2: fmtFundamental(s2.peRatio, s2, n => n.toFixed(2)),
