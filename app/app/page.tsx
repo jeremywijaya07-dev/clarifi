@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info, Zap,
-  Maximize2, X,
+  Maximize2, X, Bell,
 } from 'lucide-react';
 import TradingViewChart from '@/components/TradingViewChart';
 import AIAnalysis from '@/components/AIAnalysis';
@@ -246,6 +246,10 @@ function StockAnalysis() {
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('us');
   const [chartFullscreen, setChartFullscreen] = useState(false);
+  const [alertModal, setAlertModal] = useState(false);
+  const [alertCondition, setAlertCondition] = useState<'above' | 'below'>('above');
+  const [alertTarget, setAlertTarget] = useState('');
+  const [alertSaved, setAlertSaved] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -297,6 +301,39 @@ function StockAnalysis() {
     const next = watchlist.includes(sym) ? watchlist.filter(s => s !== sym) : [...watchlist, sym];
     setWatchlist(next);
     localStorage.setItem('watchlist', JSON.stringify(next));
+  };
+
+  const handleSetAlert = () => {
+    if (!stock) return;
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+    setAlertTarget(String(stock.price));
+    setAlertCondition('above');
+    setAlertSaved(false);
+    setAlertModal(true);
+  };
+
+  const saveAlert = () => {
+    if (!stock) return;
+    const target = parseFloat(alertTarget);
+    if (!target || target <= 0) return;
+    const newAlert = {
+      id: Date.now().toString(),
+      symbol: stock.symbol,
+      name: stock.name,
+      currency: stock.currency,
+      condition: alertCondition,
+      targetPrice: target,
+      basePrice: stock.price,
+      triggered: false,
+      createdAt: new Date().toISOString(),
+    };
+    const raw = localStorage.getItem('price_alerts');
+    const existing = raw ? JSON.parse(raw) : [];
+    localStorage.setItem('price_alerts', JSON.stringify([...existing, newAlert]));
+    setAlertSaved(true);
+    setTimeout(() => setAlertModal(false), 1200);
   };
 
   const isWatching = stock ? watchlist.includes(stock.symbol) : false;
@@ -436,17 +473,27 @@ function StockAnalysis() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={toggleWatch}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors shrink-0 ${
-                      isWatching
-                        ? 'bg-[#00A86B]/10 border-[#00A86B] text-[#00A86B]'
-                        : 'bg-white dark:bg-[#111827] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]'
-                    }`}
-                  >
-                    {isWatching ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                    {isWatching ? 'Watching' : 'Watch'}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={handleSetAlert}
+                      title="Set price alert"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors bg-white dark:bg-[#111827] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]"
+                    >
+                      <Bell className="w-3.5 h-3.5" />
+                      Alert
+                    </button>
+                    <button
+                      onClick={toggleWatch}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                        isWatching
+                          ? 'bg-[#00A86B]/10 border-[#00A86B] text-[#00A86B]'
+                          : 'bg-white dark:bg-[#111827] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]'
+                      }`}
+                    >
+                      {isWatching ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+                      {isWatching ? 'Watching' : 'Watch'}
+                    </button>
+                  </div>
                 </div>
                 <div className="h-px bg-gray-100 dark:bg-[#1F2937] mb-3" />
                 <div className="flex flex-wrap gap-2">
@@ -612,6 +659,86 @@ function StockAnalysis() {
           </div>
         )}
       </div>
+
+      {/* Price Alert modal */}
+      {alertModal && stock && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAlertModal(false)} />
+          <div className="relative bg-white dark:bg-[#111827] rounded-2xl border border-gray-200 dark:border-[#2D3748] shadow-2xl p-5 w-full max-w-sm z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">Set Price Alert</h3>
+              <button onClick={() => setAlertModal(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current price reference */}
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">{stock.symbol} · Current Price</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(stock.price, stock.currency)}</p>
+            </div>
+
+            {/* Condition toggle */}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Alert when price goes:</p>
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setAlertCondition('above')}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg border transition-colors ${
+                  alertCondition === 'above'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-400 text-emerald-600 dark:text-emerald-400'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                }`}
+              >
+                ▲ Above
+              </button>
+              <button
+                onClick={() => setAlertCondition('below')}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg border transition-colors ${
+                  alertCondition === 'below'
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-400 text-[#E24B4A]'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                }`}
+              >
+                ▼ Below
+              </button>
+            </div>
+
+            {/* Target price input */}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Target price ({stock.currency}):</p>
+            <input
+              type="number"
+              value={alertTarget}
+              onChange={e => setAlertTarget(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveAlert()}
+              min="0"
+              step="any"
+              autoFocus
+              className="w-full px-3 py-2.5 mb-4 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#00A86B] transition-colors"
+            />
+
+            {/* Notification blocked warning */}
+            {typeof Notification !== 'undefined' && Notification.permission === 'denied' && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-3">
+                ⚠ Notifikasi diblokir browser — aktifkan di pengaturan untuk menerima alert.
+              </p>
+            )}
+
+            {/* Success state */}
+            {alertSaved ? (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold text-center py-2.5">
+                ✓ Alert disimpan!
+              </p>
+            ) : (
+              <button
+                onClick={saveAlert}
+                className="w-full py-2.5 bg-[#00A86B] hover:bg-[#009060] text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                Set Alert
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
