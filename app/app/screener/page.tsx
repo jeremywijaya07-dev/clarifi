@@ -361,7 +361,7 @@ export default function ScreenerPage() {
                         return (
                           <Link
                             key={s.symbol}
-                            href={`/app?symbol=${encodeURIComponent(s.symbol)}`}
+                            href={`/app?symbol=${encodeURIComponent(s.symbol.replace(/:IDX$/i, ''))}`}
                             className="table-row hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
                           >
                             <td className="px-3 py-2.5">
