@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info, Zap,
+  Maximize2, X,
 } from 'lucide-react';
 import TradingViewChart from '@/components/TradingViewChart';
 import AIAnalysis from '@/components/AIAnalysis';
@@ -244,6 +245,7 @@ function StockAnalysis() {
   const [stock, setStock] = useState<StockData | null>(null);
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState('us');
+  const [chartFullscreen, setChartFullscreen] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -256,6 +258,14 @@ function StockAnalysis() {
     if (sym) fetchStock(sym);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Close fullscreen on ESC
+  useEffect(() => {
+    if (!chartFullscreen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setChartFullscreen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [chartFullscreen]);
 
   const fetchStock = async (sym: string) => {
     const s = sym.trim().toUpperCase();
@@ -448,22 +458,30 @@ function StockAnalysis() {
 
               {/* Chart — TradingView Advanced Chart Widget */}
               <div className="card overflow-hidden">
-                {/* Remove p-4 padding so the widget fills edge-to-edge inside the card */}
-                <div className="px-4 pt-4 pb-1">
-                  <h2 className="card-title">Price Chart</h2>
-                  <p className="text-[10px] text-[#6B7280] mt-0.5">
-                    {(() => {
-                    const sym = stock.symbol.replace(/:IDX$/i, '');
-                    const tvSym = stock.currency === 'IDR' || stock.exchange === 'JKT' || stock.exchange?.toUpperCase() === 'IDX'
-                      ? `IDX:${sym}`
-                      : stock.exchange?.toUpperCase().includes('NASDAQ')
-                      ? `NASDAQ:${sym}`
-                      : stock.exchange?.toUpperCase().includes('NYSE')
-                      ? `NYSE:${sym}`
-                      : sym;
-                    return `TradingView · ${tvSym} · candlestick + volume + drawing tools`;
-                  })()}
-                  </p>
+                <div className="px-4 pt-4 pb-1 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h2 className="card-title">Price Chart</h2>
+                    <p className="text-[10px] text-[#6B7280] mt-0.5 truncate">
+                      {(() => {
+                        const sym = stock.symbol.replace(/:IDX$/i, '');
+                        const tvSym = stock.currency === 'IDR' || stock.exchange === 'JKT' || stock.exchange?.toUpperCase() === 'IDX'
+                          ? `IDX:${sym}`
+                          : stock.exchange?.toUpperCase().includes('NASDAQ')
+                          ? `NASDAQ:${sym}`
+                          : stock.exchange?.toUpperCase().includes('NYSE')
+                          ? `NYSE:${sym}`
+                          : sym;
+                        return `TradingView · ${tvSym} · candlestick + volume + drawing tools`;
+                      })()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setChartFullscreen(true)}
+                    title="Fullscreen (ESC to exit)"
+                    className="shrink-0 p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
                 </div>
                 <TradingViewChart
                   symbol={stock.symbol}
@@ -472,6 +490,39 @@ function StockAnalysis() {
                   height={520}
                 />
               </div>
+
+              {/* Fullscreen chart overlay */}
+              {chartFullscreen && (
+                <div className="fixed inset-0 z-50 bg-[#0A0F1E] flex flex-col">
+                  {/* Overlay header */}
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 shrink-0">
+                    <div>
+                      <p className="text-sm font-bold text-white">
+                        {stock.symbol.replace(/:IDX$/i, '')} — Price Chart
+                      </p>
+                      <p className="text-[10px] text-gray-500">
+                        TradingView · Press <kbd className="px-1 py-0.5 text-[9px] bg-gray-800 text-gray-400 rounded border border-gray-700">ESC</kbd> to exit fullscreen
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setChartFullscreen(false)}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                      title="Exit fullscreen"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  {/* Chart fills remaining height */}
+                  <div className="flex-1 min-h-0">
+                    <TradingViewChart
+                      symbol={stock.symbol}
+                      exchange={stock.exchange}
+                      currency={stock.currency}
+                      height="100%"
+                    />
+                  </div>
+                </div>
+              )}
               {/* Technical indicators */}
               <div className="card p-4">
                 <h2 className="card-title mb-3">Technical Indicators</h2>

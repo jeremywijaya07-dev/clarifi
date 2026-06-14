@@ -31,7 +31,8 @@ interface Props {
   symbol: string;
   exchange: string;
   currency?: string;
-  height?: number;
+  /** px number or any CSS length string (e.g. "100%", "calc(100vh - 53px)") */
+  height?: number | string;
 }
 
 export default function TradingViewChart({ symbol, exchange, currency = 'USD', height = 520 }: Props) {
