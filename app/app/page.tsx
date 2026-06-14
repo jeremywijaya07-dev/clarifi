@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import TradingViewChart from '@/components/TradingViewChart';
 import AIAnalysis from '@/components/AIAnalysis';
+import StockChat from '@/components/StockChat';
 import NewsSection from '@/components/NewsSection';
 import TickerAutocomplete from '@/components/TickerAutocomplete';
 import { StockData } from '@/lib/types';
@@ -595,6 +596,9 @@ function StockAnalysis() {
 
               {/* AI Analysis */}
               <AIAnalysis stockData={stock} />
+
+              {/* AI Chat */}
+              <StockChat stockData={stock} />
             </div>
 
             {/* ── Right 38% ── */}
