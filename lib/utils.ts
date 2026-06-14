@@ -1,7 +1,9 @@
 export function formatCurrency(value: number, currency = 'USD'): string {
   if (currency === 'IDR') {
-    if (value >= 1e6) return `Rp${(value / 1e6).toFixed(2)}M`;
-    if (value >= 1e3) return `Rp${value.toLocaleString('id-ID')}`;
+    const fmt = (n: number) => n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (value >= 1e12) return `Rp${fmt(value / 1e12)} Triliun`;
+    if (value >= 1e6)  return `Rp${fmt(value / 1e6)} Juta`;
+    if (value >= 1e3)  return `Rp${value.toLocaleString('id-ID')}`;
     return `Rp${value.toFixed(0)}`;
   }
   if (value >= 1000) {

@@ -1,9 +1,10 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Trash2, RefreshCw, PieChart, Plus, Loader2 } from 'lucide-react';
 import { StockData } from '@/lib/types';
 import { formatCurrency, formatPercent } from '@/lib/utils';
+import TickerAutocomplete from '@/components/TickerAutocomplete';
 
 interface StoredPosition {
   id: string;
@@ -38,6 +39,7 @@ export default function PortfolioPage() {
   const [buyPrice, setBuyPrice] = useState('');
   const [formErr, setFormErr] = useState('');
   const [adding, setAdding] = useState(false);
+  const lotsRef = useRef<HTMLInputElement>(null);
 
   const loadItem = useCallback((item: PortfolioItem) => {
     fetch(`/api/stock?symbol=${encodeURIComponent(item.symbol)}`)
@@ -193,15 +195,17 @@ export default function PortfolioPage() {
         <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
           <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Add Position</p>
           <div className="flex flex-wrap gap-2">
-            <input
-              type="text"
-              placeholder="Ticker (e.g. BBRI:IDX)"
+            <TickerAutocomplete
               value={sym}
-              onChange={e => setSym(e.target.value.toUpperCase())}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              className="flex-1 min-w-[140px] px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#1D9E75] transition-colors"
+              onChange={val => setSym(val.toUpperCase())}
+              onSelect={val => { setSym(val); setTimeout(() => lotsRef.current?.focus(), 50); }}
+              onEnterPress={handleAdd}
+              placeholder="Ticker (e.g. BBRI:IDX)"
+              showIcon={false}
+              inputClassName="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#1D9E75] transition-colors"
             />
             <input
+              ref={lotsRef}
               type="number"
               placeholder="Lots"
               value={lots}
