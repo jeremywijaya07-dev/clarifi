@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: '/app/watchlist', label: 'Watchlist' },
   { href: '/app/portfolio', label: 'Portfolio' },
   { href: '/app/alerts', label: 'Alerts' },
+  { href: '/app/screener', label: 'Screener' },
 ];
 
 function ClarifiLogo() {
