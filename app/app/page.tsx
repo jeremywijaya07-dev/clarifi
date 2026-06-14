@@ -491,35 +491,28 @@ function StockAnalysis() {
                 />
               </div>
 
-              {/* Fullscreen chart overlay */}
+              {/* Fullscreen chart overlay — chart fills full viewport, close button floats above */}
               {chartFullscreen && (
-                <div className="fixed inset-0 z-50 bg-[#0A0F1E] flex flex-col">
-                  {/* Overlay header */}
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 shrink-0">
-                    <div>
-                      <p className="text-sm font-bold text-white">
-                        {stock.symbol.replace(/:IDX$/i, '')} — Price Chart
-                      </p>
-                      <p className="text-[10px] text-gray-500">
-                        TradingView · Press <kbd className="px-1 py-0.5 text-[9px] bg-gray-800 text-gray-400 rounded border border-gray-700">ESC</kbd> to exit fullscreen
-                      </p>
-                    </div>
+                <div className="fixed inset-0 z-50">
+                  {/* Chart covers entire viewport — no header so TradingView toolbar is unobstructed */}
+                  <TradingViewChart
+                    symbol={stock.symbol}
+                    exchange={stock.exchange}
+                    currency={stock.currency}
+                    height="100%"
+                  />
+                  {/* Floating close affordance — sits above the iframe via z-index */}
+                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 pointer-events-none">
+                    <span className="hidden sm:inline text-[10px] text-gray-400/80 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-full select-none">
+                      ESC to exit
+                    </span>
                     <button
                       onClick={() => setChartFullscreen(false)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                      title="Exit fullscreen"
+                      title="Exit fullscreen (ESC)"
+                      className="pointer-events-auto p-1.5 bg-black/60 backdrop-blur-sm text-gray-300 hover:text-white hover:bg-black/80 rounded-lg border border-white/10 transition-colors"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4" />
                     </button>
-                  </div>
-                  {/* Chart fills remaining height */}
-                  <div className="flex-1 min-h-0">
-                    <TradingViewChart
-                      symbol={stock.symbol}
-                      exchange={stock.exchange}
-                      currency={stock.currency}
-                      height="100%"
-                    />
                   </div>
                 </div>
               )}
