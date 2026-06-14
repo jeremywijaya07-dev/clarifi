@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import {
   Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info, Zap,
 } from 'lucide-react';
-import PriceChart from '@/components/PriceChart';
+import TradingViewChart from '@/components/TradingViewChart';
 import AIAnalysis from '@/components/AIAnalysis';
 import NewsSection from '@/components/NewsSection';
 import TickerAutocomplete from '@/components/TickerAutocomplete';
@@ -446,12 +446,32 @@ function StockAnalysis() {
                 </div>
               </div>
 
-              {/* Chart */}
-              <div className="card p-4">
-                <h2 className="card-title mb-3">Price Chart</h2>
-                <PriceChart data={stock.priceHistory} currency={stock.currency} symbol={stock.symbol} />
+              {/* Chart — TradingView Advanced Chart Widget */}
+              <div className="card overflow-hidden">
+                {/* Remove p-4 padding so the widget fills edge-to-edge inside the card */}
+                <div className="px-4 pt-4 pb-1">
+                  <h2 className="card-title">Price Chart</h2>
+                  <p className="text-[10px] text-[#6B7280] mt-0.5">
+                    {(() => {
+                    const sym = stock.symbol.replace(/:IDX$/i, '');
+                    const tvSym = stock.currency === 'IDR' || stock.exchange === 'JKT' || stock.exchange?.toUpperCase() === 'IDX'
+                      ? `IDX:${sym}`
+                      : stock.exchange?.toUpperCase().includes('NASDAQ')
+                      ? `NASDAQ:${sym}`
+                      : stock.exchange?.toUpperCase().includes('NYSE')
+                      ? `NYSE:${sym}`
+                      : sym;
+                    return `TradingView · ${tvSym} · candlestick + volume + drawing tools`;
+                  })()}
+                  </p>
+                </div>
+                <TradingViewChart
+                  symbol={stock.symbol}
+                  exchange={stock.exchange}
+                  currency={stock.currency}
+                  height={520}
+                />
               </div>
-
               {/* Technical indicators */}
               <div className="card p-4">
                 <h2 className="card-title mb-3">Technical Indicators</h2>
