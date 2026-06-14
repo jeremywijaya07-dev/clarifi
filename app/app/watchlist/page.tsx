@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Trash2, RefreshCw, BookmarkCheck, ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { StockData } from '@/lib/types';
-import { formatCurrency, formatPercent, getTrendSignal } from '@/lib/utils';
+import { formatCurrency, formatPercent, getTrendSignal, getRSISignal } from '@/lib/utils';
 
 interface WatchItem {
   symbol: string;
@@ -154,6 +154,8 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
   }
 
   const trend = getTrendSignal(data.change1M);
+  const rsiSignal = getRSISignal(data.rsi14);
+  const aboveSMA20 = data.sma20 > 0 && data.price >= data.sma20;
 
   return (
     <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
@@ -191,6 +193,15 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
             {trend === 'bullish' && <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
             {trend === 'bearish' && <TrendingDown className="w-3.5 h-3.5 text-[#E24B4A]" />}
             {trend === 'neutral' && <Minus className="w-3.5 h-3.5 text-gray-400" />}
+            {data.sma20 > 0 && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                aboveSMA20
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400'
+              }`}>
+                {aboveSMA20 ? '▲ Above SMA20' : '▼ Below SMA20'}
+              </span>
+            )}
           </div>
         </Link>
 
@@ -198,6 +209,13 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
           <div className="text-right hidden sm:block">
             <p className="text-[10px] text-gray-400 dark:text-gray-500">RSI</p>
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{data.rsi14}</p>
+            <p className={`text-[9px] font-medium mt-0.5 ${
+              rsiSignal === 'overbought' ? 'text-[#E24B4A]' :
+              rsiSignal === 'oversold'   ? 'text-blue-500 dark:text-blue-400' :
+                                          'text-gray-400 dark:text-gray-500'
+            }`}>
+              {rsiSignal === 'overbought' ? 'Overbought' : rsiSignal === 'oversold' ? 'Oversold' : 'Neutral'}
+            </p>
           </div>
           <Link
             href={`/app?symbol=${encodeURIComponent(data.symbol)}`}
