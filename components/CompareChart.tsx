@@ -10,7 +10,7 @@ type Period = '1M' | '3M' | '6M' | '1Y';
 const PERIODS: Period[] = ['1M', '3M', '6M', '1Y'];
 
 const S1_COLOR = '#3B82F6';
-const S2_COLOR = '#A855F7';
+const S2_COLOR = '#F97316';
 
 interface ChartPoint {
   date: string;
