@@ -10,6 +10,7 @@ import AIAnalysis from '@/components/AIAnalysis';
 import StockChat from '@/components/StockChat';
 import NewsSection from '@/components/NewsSection';
 import TickerAutocomplete from '@/components/TickerAutocomplete';
+import MarketSummary from '@/components/MarketSummary';
 import { StockData } from '@/lib/types';
 import {
   formatCurrency, formatLargeNumber, formatPercent, formatVolume,
@@ -370,6 +371,9 @@ function StockAnalysis() {
   return (
     <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+        {/* AI Market Summary */}
+        <MarketSummary />
 
         {/* Search — own card */}
         <div className="max-w-[680px] mx-auto mb-4">
