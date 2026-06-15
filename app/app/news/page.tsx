@@ -8,16 +8,16 @@ type SectorKey =
   | 'all' | 'banking' | 'tech' | 'energy'
   | 'consumer' | 'property' | 'health' | 'telecom' | 'industry';
 
-const SECTORS: { key: SectorKey; label: string }[] = [
+const SECTORS: { key: SectorKey; label: string; tickers?: string }[] = [
   { key: 'all',      label: 'Semua' },
-  { key: 'banking',  label: 'Perbankan & Keuangan' },
-  { key: 'tech',     label: 'Teknologi & Digital' },
-  { key: 'energy',   label: 'Energi & Tambang' },
-  { key: 'consumer', label: 'Consumer & Retail' },
-  { key: 'property', label: 'Properti' },
-  { key: 'health',   label: 'Kesehatan' },
-  { key: 'telecom',  label: 'Telekomunikasi' },
-  { key: 'industry', label: 'Industri & Manufaktur' },
+  { key: 'banking',  label: 'Perbankan & Keuangan', tickers: 'BBCA, BBRI, BMRI' },
+  { key: 'tech',     label: 'Teknologi & Digital',  tickers: 'GOTO, BUKA, ARTO' },
+  { key: 'energy',   label: 'Energi & Tambang',     tickers: 'ADRO, PTBA, ANTM' },
+  { key: 'consumer', label: 'Consumer & Retail',    tickers: 'UNVR, ICBP, AMRT' },
+  { key: 'property', label: 'Properti',             tickers: 'BSDE, CTRA, PWON' },
+  { key: 'health',   label: 'Kesehatan',            tickers: 'KLBF, MIKA, HEAL' },
+  { key: 'telecom',  label: 'Telekomunikasi',       tickers: 'TLKM, EXCL, ISAT' },
+  { key: 'industry', label: 'Industri & Manufaktur',tickers: 'ASII, SMGR, INTP' },
 ];
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -94,8 +94,8 @@ export default function NewsPage() {
         </div>
 
         {/* Sector chips */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
-          {SECTORS.map(({ key, label }) => (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-1 scrollbar-hide">
+          {SECTORS.map(({ key, label, tickers }) => (
             <button
               key={key}
               onClick={() => setSector(key)}
@@ -106,9 +106,17 @@ export default function NewsPage() {
               }`}
             >
               {label}
+              {tickers && (
+                <span className={`ml-1.5 text-[10px] font-normal ${sector === key ? 'text-white/75' : 'text-gray-400 dark:text-gray-500'}`}>
+                  {tickers}
+                </span>
+              )}
             </button>
           ))}
         </div>
+        <p className="text-[11px] text-gray-400 dark:text-gray-600 mb-5">
+          Berita difilter berdasarkan kata kunci sektor · beberapa artikel mungkin muncul di beberapa tab
+        </p>
 
         {/* Loading (first load) */}
         {loading && news.length === 0 && <NewsSkeleton />}
