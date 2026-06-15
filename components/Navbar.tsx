@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -33,6 +33,7 @@ function ClarifiLogo() {
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [dark, setDark] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -45,6 +46,23 @@ export default function Navbar() {
 
   // Close mobile menu on route change
   useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  // "/" global shortcut — focus search on Analysis page, navigate there from elsewhere
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/') return;
+      const el = e.target as HTMLElement;
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return;
+      e.preventDefault();
+      if (pathname === '/app') {
+        window.dispatchEvent(new CustomEvent('clarifi:focus-search'));
+      } else {
+        router.push('/app?autofocus=1');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pathname, router]);
 
   const toggleTheme = () => {
     const next = !dark;

@@ -8,19 +8,38 @@ import { formatCurrency, formatPercent } from '@/lib/utils';
 // ── Universe ─────────────────────────────────────────────────────────────────
 
 const IDX_UNIVERSE = [
-  'BBCA', 'BBRI', 'BMRI', 'BNGA', 'BBNI', 'MEGA',
-  'TLKM', 'EXCL', 'ISAT',
-  'ASII', 'AALI', 'UNTR',
-  'GOTO', 'BUKA', 'EMTK',
-  'ADRO', 'PTBA', 'ITMG', 'INCO', 'ANTM', 'MDKA', 'AMMN',
+  // LQ45 / IDX80 core — Banking & Finance
+  'BBCA', 'BBRI', 'BMRI', 'BNGA', 'BBNI', 'MEGA', 'BRIS', 'NISP', 'MAYA', 'BTPN',
+  'PNBN', 'BDMN', 'AGRO', 'BBTN', 'BNII', 'BJBR', 'BJTM', 'BTPS', 'BFIN', 'ADMF', 'MFIN',
+  // Telco & Tech
+  'TLKM', 'EXCL', 'ISAT', 'GOTO', 'BUKA', 'EMTK', 'DCII', 'WIFI', 'TBIG', 'TOWR', 'LINK', 'MLPT', 'MTDL',
+  // Conglomerate & Automotive
+  'ASII', 'AALI', 'UNTR', 'AUTO', 'SMSM', 'GJTL',
+  // Energy & Mining
+  'ADRO', 'PTBA', 'ITMG', 'INCO', 'ANTM', 'MDKA', 'AMMN', 'HRUM', 'MEDC', 'ESSA',
+  'TINS', 'DEWA', 'TOBA', 'BUMI', 'BRMS', 'ELSA', 'RUIS', 'DSSA',
+  // Oil, Gas & Chemicals
+  'PGAS', 'BRPT', 'TPIA', 'INKP', 'TKIM',
+  // Consumer Staples & Retail
   'UNVR', 'ICBP', 'INDF', 'MYOR', 'AMRT', 'CPIN',
-  'SMGR', 'INTP', 'PGAS', 'AKRA', 'KLBF', 'SIDO', 'MIKA',
-  'BMTR', 'SCMA', 'PWON', 'BSDE', 'CTRA', 'SMRA',
-  'CUAN', 'WIFI', 'PGEO', 'BREN', 'BRPT', 'TPIA',
-  'DSSA', 'INKP', 'TKIM', 'BUMI', 'BRMS', 'DCII',
-  'JSMR', 'MAPI', 'ARTO', 'HRUM', 'MEDC', 'BULL',
-  'BJBR', 'BJTM', 'BTPS', 'HEAL', 'PRDA', 'ESSA',
-  'LPKR', 'KIJA', 'DMAS', 'MBMA', 'NCKL',
+  'GGRM', 'HMSP', 'ACES', 'LPPF', 'RALS', 'MIDI', 'MAPA', 'ERAA',
+  'ULTJ', 'DLTA', 'CMRY', 'CLEO', 'ROTI', 'CAMP', 'ADES', 'JPFA', 'MAIN', 'GOOD', 'FOOD', 'CEKA',
+  // Healthcare & Pharma
+  'KLBF', 'SIDO', 'MIKA', 'HEAL', 'PRDA', 'SILO', 'KAEF', 'TSPC', 'DVLA', 'DGNS',
+  // Industrial & Cement
+  'SMGR', 'INTP', 'AKRA', 'SMCB', 'INDR', 'KINO', 'WOOD', 'SMMA',
+  // Plantation
+  'LSIP', 'SSMS', 'SGRO', 'TAPG', 'BWPT', 'PALM',
+  // Construction & Infrastructure
+  'WSKT', 'WIKA', 'PTPP', 'ADHI', 'WTON', 'TOTL', 'JSMR', 'PTRO',
+  // Property
+  'PWON', 'BSDE', 'CTRA', 'SMRA', 'LPKR', 'KIJA', 'DMAS', 'DILD', 'MDLN', 'LPCK', 'ASRI', 'MKPI',
+  // Emerging / New Economy
+  'CUAN', 'PGEO', 'BREN', 'MBMA', 'NCKL', 'ARTO', 'BULL',
+  // Media, Investment & Others
+  'BMTR', 'SCMA', 'MNCN', 'SRTG', 'PNLF', 'TRIM', 'BSIM', 'SMDR', 'BIRD',
+  // Energy Services & Misc
+  'SOHO', 'MAPI',
 ];
 
 const BATCH_SIZE = 10;

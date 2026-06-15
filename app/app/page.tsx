@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info, Zap,
@@ -332,6 +332,7 @@ function StockAnalysis() {
   const [alertTarget, setAlertTarget] = useState('');
   const [alertSaved, setAlertSaved] = useState(false);
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -341,7 +342,21 @@ function StockAnalysis() {
     } catch { /* ignore */ }
     const sym = searchParams.get('symbol');
     if (sym) fetchStock(sym);
+    // Autofocus from "/" shortcut cross-page navigation
+    if (searchParams.get('autofocus') === '1') {
+      searchInputRef.current?.focus();
+      const url = new URL(window.location.href);
+      url.searchParams.delete('autofocus');
+      window.history.replaceState({}, '', url.toString());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // "/" shortcut — dispatched by Navbar when already on /app
+  useEffect(() => {
+    const handler = () => searchInputRef.current?.focus();
+    window.addEventListener('clarifi:focus-search', handler);
+    return () => window.removeEventListener('clarifi:focus-search', handler);
   }, []);
 
   // Close fullscreen on ESC
@@ -364,6 +379,11 @@ function StockAnalysis() {
       if (!res.ok) throw new Error(data.error ?? 'Failed to load stock');
       setStock(data as StockData);
       setQuery(s);
+      // Save to search history (max 5, deduplicated)
+      try {
+        const hist: string[] = JSON.parse(localStorage.getItem('search_history') ?? '[]');
+        localStorage.setItem('search_history', JSON.stringify([s, ...hist.filter(h => h !== s)].slice(0, 5)));
+      } catch { /* ignore */ }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
@@ -440,6 +460,8 @@ function StockAnalysis() {
                 onSelect={sym => { setQuery(sym); fetchStock(sym); }}
                 placeholder="Search ticker... (e.g. AAPL, BBRI, PTRO, NVDA)"
                 showIcon
+                showHistory
+                inputRef={searchInputRef}
                 inputClassName="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent border border-gray-200 dark:border-[#1F2937] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]/30 focus:border-[#0EA5E9] dark:text-[#F9FAFB] placeholder:text-[#6B7280]"
               />
               <button type="submit" disabled={loading} className="btn-primary shrink-0">

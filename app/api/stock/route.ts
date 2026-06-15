@@ -4,13 +4,38 @@ import { StockData, PricePoint } from '@/lib/types';
 // ── IDX ticker list for auto-detection ──────────────────────────────────────
 
 const IDX_TICKERS = new Set([
-  'BBCA','BBRI','BMRI','BBNI','BRIS','BREN','DCII','TPIA','AMMN',
-  'GOTO','BUKA','TLKM','EXCL','ISAT','ANTM','ADRO','PTBA','ITMG',
-  'PTRO','BRPT','ASII','UNVR','ICBP','INDF','KLBF','MIKA','BSDE',
-  'SMRA','CTRA','JSMR','INKP','TKIM','MNCN','LPKR','MAPI','MDKA',
-  'INCO','HRUM','NISP','BNGA','MAYA','MYOR','HEAL','SIDO','PWON',
-  'EMTK','MTDL','ASGR','SMGR','INTP','BRMS','AVIA','PGAS','MPMX',
-  'MORA','WSKT','WIKA','PTPP',
+  // Banking & Finance
+  'BBCA','BBRI','BMRI','BBNI','BNGA','MEGA','BRIS','NISP','MAYA','BTPN',
+  'PNBN','BDMN','AGRO','BBTN','BNII','BJBR','BJTM','BTPS','BFIN','ADMF','MFIN',
+  // Telco & Tech
+  'TLKM','EXCL','ISAT','GOTO','BUKA','EMTK','DCII','WIFI','TBIG','TOWR','LINK','MLPT','MTDL',
+  // Conglomerate & Automotive
+  'ASII','AALI','UNTR','AUTO','SMSM','GJTL',
+  // Energy & Mining
+  'ADRO','PTBA','ITMG','INCO','ANTM','MDKA','AMMN','HRUM','MEDC','ESSA',
+  'TINS','DEWA','TOBA','BUMI','BRMS','ELSA','RUIS','DSSA',
+  // Oil, Gas & Chemicals
+  'PGAS','BRPT','TPIA','INKP','TKIM',
+  // Consumer Staples & Retail
+  'UNVR','ICBP','INDF','MYOR','AMRT','CPIN',
+  'GGRM','HMSP','ACES','LPPF','RALS','MIDI','MAPA','ERAA',
+  'ULTJ','DLTA','CMRY','CLEO','ROTI','CAMP','ADES','JPFA','MAIN','GOOD','FOOD','CEKA',
+  // Healthcare & Pharma
+  'KLBF','SIDO','MIKA','HEAL','PRDA','SILO','KAEF','TSPC','DVLA','DGNS',
+  // Industrial & Cement
+  'SMGR','INTP','AKRA','SMCB','INDR','KINO','WOOD','SMMA',
+  // Plantation
+  'LSIP','SSMS','SGRO','TAPG','BWPT','PALM',
+  // Construction & Infrastructure
+  'WSKT','WIKA','PTPP','ADHI','WTON','TOTL','JSMR','PTRO',
+  // Property
+  'PWON','BSDE','CTRA','SMRA','LPKR','KIJA','DMAS','DILD','MDLN','LPCK','ASRI','MKPI',
+  // Emerging / New Economy
+  'CUAN','PGEO','BREN','MBMA','NCKL','ARTO','BULL',
+  // Media, Investment & Others
+  'BMTR','SCMA','MNCN','SRTG','PNLF','TRIM','BSIM','SMDR','BIRD',
+  // Misc
+  'SOHO','MAPI','ASGR','AVIA','MPMX','MORA',
 ]);
 
 // ── Shared helpers ───────────────────────────────────────────────────────────

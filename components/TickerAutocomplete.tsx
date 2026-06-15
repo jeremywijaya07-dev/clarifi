@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Clock } from 'lucide-react';
 import { searchTickers } from '@/lib/tickers';
 
 interface DropdownItem {
@@ -31,6 +31,8 @@ interface Props {
   placeholder?: string;
   inputClassName?: string;
   showIcon?: boolean;
+  showHistory?: boolean;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
 export default function TickerAutocomplete({
@@ -41,27 +43,56 @@ export default function TickerAutocomplete({
   placeholder = 'Search ticker...',
   inputClassName = '',
   showIcon = true,
+  showHistory = false,
+  inputRef,
 }: Props) {
   const [results, setResults] = useState<DropdownItem[]>([]);
   const [open, setOpen] = useState(false);
   const [liveLoading, setLiveLoading] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState(-1);
+  const [isHistory, setIsHistory] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const isFocusedRef = useRef(false);
+
+  const loadHistoryItems = useCallback((): DropdownItem[] => {
+    try {
+      const hist: string[] = JSON.parse(localStorage.getItem('search_history') ?? '[]');
+      return hist.map(sym => {
+        const matches = searchTickers(sym);
+        const t = matches.find(m => m.symbol.toUpperCase() === sym.toUpperCase()) ?? matches[0];
+        return { symbol: sym, name: t?.name ?? sym, exchange: (t?.exchange ?? '') as string };
+      });
+    } catch { return []; }
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (value.length < 2) {
       abortRef.current?.abort();
-      setResults([]);
       setLiveLoading(false);
-      setOpen(false);
       setFocusedIdx(-1);
+
+      // When input is focused and empty, show recent searches
+      if (showHistory && isFocusedRef.current && value.length === 0) {
+        const hist = loadHistoryItems();
+        if (hist.length > 0) {
+          setResults(hist);
+          setIsHistory(true);
+          setOpen(true);
+          return;
+        }
+      }
+
+      setResults([]);
+      setIsHistory(false);
+      setOpen(false);
       return;
     }
 
+    setIsHistory(false);
     const staticR: DropdownItem[] = searchTickers(value).map(t => ({
       symbol: t.symbol,
       name: t.name,
@@ -97,7 +128,7 @@ export default function TickerAutocomplete({
       if (debounceRef.current) clearTimeout(debounceRef.current);
       abortRef.current?.abort();
     };
-  }, [value]);
+  }, [value, showHistory, loadHistoryItems]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -113,6 +144,7 @@ export default function TickerAutocomplete({
     onChange(item.symbol);
     onSelect(item.symbol);
     setOpen(false);
+    setIsHistory(false);
     setFocusedIdx(-1);
   }, [onChange, onSelect]);
 
@@ -127,6 +159,7 @@ export default function TickerAutocomplete({
       setFocusedIdx(i => Math.max(i - 1, 0));
     } else if (e.key === 'Escape') {
       setOpen(false);
+      setIsHistory(false);
       setFocusedIdx(-1);
     } else if (e.key === 'Enter') {
       if (open && focusedIdx >= 0 && results[focusedIdx]) {
@@ -134,11 +167,26 @@ export default function TickerAutocomplete({
         handleSelect(results[focusedIdx]);
       } else {
         setOpen(false);
+        setIsHistory(false);
         setFocusedIdx(-1);
         onEnterPress?.();
       }
     }
   }, [open, results, focusedIdx, handleSelect, onEnterPress]);
+
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+    if (value.length === 0 && showHistory) {
+      const hist = loadHistoryItems();
+      if (hist.length > 0) {
+        setResults(hist);
+        setIsHistory(true);
+        setOpen(true);
+        return;
+      }
+    }
+    if (results.length > 0 || liveLoading) setOpen(true);
+  };
 
   const showDropdown = open && (results.length > 0 || liveLoading);
 
@@ -148,11 +196,13 @@ export default function TickerAutocomplete({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
       )}
       <input
+        ref={inputRef}
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        onFocus={() => { if (results.length > 0 || liveLoading) setOpen(true); }}
+        onFocus={handleFocus}
+        onBlur={() => { isFocusedRef.current = false; }}
         placeholder={placeholder}
         className={inputClassName}
         autoComplete="off"
@@ -160,6 +210,12 @@ export default function TickerAutocomplete({
       />
       {showDropdown && (
         <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl shadow-2xl overflow-hidden">
+          {isHistory && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-gray-100 dark:border-[#1F2937]">
+              <Clock className="w-3 h-3 text-gray-400" />
+              <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Recent</span>
+            </div>
+          )}
           {results.map((t, i) => (
             <button
               key={t.symbol}
@@ -186,11 +242,11 @@ export default function TickerAutocomplete({
                   ? 'bg-blue-500/15 text-blue-500'
                   : 'bg-gray-500/15 text-gray-500'
               }`}>
-                {t.exchange}
+                {t.exchange || '—'}
               </span>
             </button>
           ))}
-          {liveLoading && (
+          {liveLoading && !isHistory && (
             <div className={`flex items-center justify-center gap-1.5 py-2 ${
               results.length > 0 ? 'border-t border-gray-100 dark:border-[#1F2937]' : ''
             }`}>
