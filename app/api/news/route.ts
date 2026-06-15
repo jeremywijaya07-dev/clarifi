@@ -8,15 +8,15 @@ const HEADERS = {
 };
 
 const SECTOR_QUERIES: Record<string, { en: string; id: string }> = {
-  all:      { en: 'IHSG Indonesia stock market today',                         id: 'IHSG saham Indonesia hari ini bursa efek' },
-  banking:  { en: 'Indonesia bank stocks BCA BRI Mandiri BBNI finance',        id: 'saham perbankan Indonesia BCA BRI Mandiri BBNI' },
-  tech:     { en: 'Indonesia technology digital stocks GOTO DCII BUKA',        id: 'saham teknologi digital Indonesia GOTO DCII Bukalapak' },
-  energy:   { en: 'Indonesia mining coal energy ADRO ITMG PTBA ANTM nickel',   id: 'saham tambang energi batubara Indonesia ADRO ITMG PTBA nikel' },
-  consumer: { en: 'Indonesia consumer goods retail UNVR MYOR ICBP INDF',       id: 'saham consumer retail Indonesia UNVR Mayora Indofood ICBP' },
-  property: { en: 'Indonesia property real estate BSDE SMRA CTRA PWON',        id: 'saham properti Indonesia BSDE Summarecon Ciputra PWON' },
-  health:   { en: 'Indonesia healthcare hospital MIKA KLBF HEAL Kalbe',        id: 'saham kesehatan rumah sakit Indonesia Kalbe Mika HEAL' },
-  telecom:  { en: 'Indonesia telecom TLKM EXCL ISAT telecommunications',       id: 'saham telekomunikasi Indonesia Telkom XL Indosat ISAT' },
-  industry: { en: 'Indonesia industrial manufacturing ASII SMGR INTP Astra',   id: 'saham industri manufaktur Indonesia Astra Semen SMGR INTP' },
+  all:      { en: 'IHSG Indonesia stock market today',                                    id: 'IHSG saham Indonesia hari ini' },
+  banking:  { en: 'BBCA BBRI BMRI Indonesia bank stocks',                                 id: 'saham perbankan Indonesia BBCA BBRI BMRI' },
+  tech:     { en: 'GOTO BUKA ARTO Indonesia technology digital stocks',                   id: 'saham teknologi digital Indonesia GOTO BUKA ARTO' },
+  energy:   { en: 'ADRO PTBA ANTM Indonesia mining energy nickel coal stocks',            id: 'saham tambang energi Indonesia ADRO PTBA ANTM nikel batubara' },
+  consumer: { en: 'UNVR ICBP AMRT Indonesia consumer retail stocks',                      id: 'saham consumer retail Indonesia UNVR ICBP AMRT' },
+  property: { en: 'BSDE CTRA PWON Indonesia property real estate stocks',                 id: 'saham properti Indonesia BSDE CTRA PWON' },
+  health:   { en: 'KLBF MIKA HEAL Indonesia healthcare pharma stocks',                    id: 'saham kesehatan Indonesia KLBF MIKA HEAL farmasi' },
+  telecom:  { en: 'TLKM EXCL ISAT Indonesia telecom stocks',                              id: 'saham telekomunikasi Indonesia TLKM EXCL ISAT' },
+  industry: { en: 'ASII SMGR INTP Indonesia industrial manufacturing stocks',             id: 'saham industri manufaktur Indonesia ASII SMGR INTP' },
 };
 
 function isIDX(symbol: string) {
