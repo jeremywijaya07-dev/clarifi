@@ -287,7 +287,7 @@ function TopFrequencyBar({ onSelect }: { onSelect: (sym: string) => void }) {
   return (
     <div className="max-w-[680px] mx-auto mb-3">
       <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5 px-0.5">
-        Top Frequency IDX
+        Most Active IDX
       </p>
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
         {items === null
@@ -452,7 +452,7 @@ function StockAnalysis() {
           </div>
         </div>
 
-        {/* Top Frequency IDX */}
+        {/* Most Active IDX */}
         <TopFrequencyBar onSelect={sym => { setQuery(sym); fetchStock(sym); }} />
 
         {/* Quick Picks — separate card */}
