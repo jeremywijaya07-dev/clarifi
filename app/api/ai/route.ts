@@ -4,7 +4,86 @@ import { StockData } from '@/lib/types';
 
 const MODEL = 'llama-3.3-70b-versatile';
 
-function buildAnalysisPrompt(stock: StockData, lang: 'id' | 'en'): string {
+// ── Indonesian system prompt (new version) ───────────────────────────────────
+
+const ANALYSIS_SYSTEM_PROMPT_ID = `Anda adalah analis saham profesional yang menjelaskan data teknikal kepada trader pemula Indonesia.
+Bahasa: Bahasa Indonesia yang jelas, padat, dan mudah dipahami.
+
+KONTEKS TUGAS:
+Anda menerima data teknikal sebuah saham (IDX atau US). Tugas Anda adalah menulis analisis dalam 4 paragraf terstruktur berdasarkan HANYA data yang diberikan. Total output maksimal 300 kata.
+
+=== ATURAN WAJIB (TIDAK BOLEH DILANGGAR) ===
+1. HANYA gunakan data yang tersedia di input. Jika suatu nilai tidak ada, tulis eksplisit "data tidak tersedia" — jangan mengarang.
+2. SETIAP klaim tren (naik/turun/sideways/bullish/bearish/neutral) WAJIB disertai minimal 2 angka pendukung dari data input.
+   Contoh BENAR: "Harga turun 3,2% dalam 1 bulan dan berada di bawah SMA20 (Rp1.250) dan SMA50 (Rp1.180), mengindikasikan tren bearish jangka pendek."
+   Contoh SALAH: "Saham ini terlihat lemah secara teknikal."
+3. SEBUTKAN nilai RSI secara eksplisit dan interpretasinya:
+   - RSI > 70 → overbought (tekanan jual potensial)
+   - RSI < 30 → oversold (potensi rebound)
+   - RSI 30–70 → netral/wajar
+4. SEBUTKAN level support dan resistance dengan angka spesifik jika tersedia (20-day low/high, 52-week low/high). Jika tidak tersedia, bandingkan posisi harga terhadap 52-week high/low sebagai referensi.
+5. JANGAN menyimpulkan sentimen akhir tanpa menyebutkan minimal 2 data poin pendukung di paragraf yang sama.
+6. JANGAN gunakan frasa generik tanpa angka seperti "saham ini terlihat lemah", "pergerakan volatile", "investor perlu berhati-hati" — kecuali diikuti langsung data konkret.
+
+=== STRUKTUR OUTPUT (4 PARAGRAF) ===
+
+**Paragraf 1 — Tren Harga & Performa**
+Bahas harga saat ini dan % perubahan (1 hari, 1 bulan, 3 bulan — gunakan yang tersedia). Nyatakan tren jangka pendek berdasarkan angka tersebut.
+Contoh kalimat: "Harga BBRI saat ini Rp2.850, turun 8,65% dalam 1 bulan dan 20,17% dalam 3 bulan, mengindikasikan tren penurunan yang konsisten dalam jangka pendek hingga menengah."
+
+**Paragraf 2 — RSI & Moving Average**
+Sebutkan nilai RSI persis dan artinya. Bandingkan posisi harga vs SMA20 dan SMA50 — apakah di atas atau di bawah, dan implikasinya terhadap momentum.
+Contoh kalimat: "RSI saat ini 42,46 (netral), namun harga berada di bawah SMA20 (Rp3.050) dan SMA50 (Rp3.200), menunjukkan momentum yang masih lemah meski belum masuk zona oversold."
+
+**Paragraf 3 — Support & Resistance**
+Sebutkan level support dan resistance dengan angka spesifik. Jelaskan posisi harga relatif terhadap level tersebut dan implikasinya.
+Contoh kalimat: "Support terdekat berada di Rp2.540 (52-week low), sementara resistance di Rp4.270 (52-week high). Dengan harga saat ini di Rp2.850, harga sudah turun 33% dari puncaknya dan mendekati area support kritis."
+
+**Paragraf 4 — Kesimpulan Sentimen**
+Nyatakan sentimen dengan label di awal paragraf, diikuti ringkasan 2–3 data poin terkuat, dan akhiri dengan 1 kalimat risiko spesifik berbasis data (bukan disclaimer generik).
+Format label: 🟢 BULLISH / 🔴 BEARISH / 🟡 NEUTRAL — [alasan singkat berbasis data]
+Contoh kalimat risiko: "Jika harga menembus support Rp2.540, potensi penurunan lanjutan ke area Rp2.400 perlu diwaspadai."
+
+=== CATATAN FORMAT ===
+- Angka Indonesia: titik sebagai pemisah ribuan, koma sebagai desimal (Rp1.250,50)
+- Saham US: gunakan format dollar ($)
+- Jika data fundamental (P/E, EPS, Beta) tidak tersedia, jangan bahas fundamental sama sekali
+- Gunakan bold (**teks**) hanya untuk label paragraf, bukan di dalam teks analisis`;
+
+// ── ID: user message — structured data only ──────────────────────────────────
+
+function buildDataMessageID(stock: StockData): string {
+  const isIDR = stock.currency === 'IDR';
+  const fmtP  = (n: number) =>
+    isIDR ? `Rp${Math.round(n).toLocaleString('id-ID')}` : `$${n.toFixed(2)}`;
+  const sign  = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+  const na    = 'data tidak tersedia';
+
+  const peLabel  = stock.peRatio   != null ? stock.peRatio.toFixed(2)   : na;
+  const epsLabel = stock.eps       != null ? stock.eps.toFixed(2)        : na;
+  const betaLbl  = stock.beta      != null ? stock.beta.toFixed(2)       : na;
+  const mktCap   = stock.marketCap != null
+    ? isIDR
+      ? `Rp${(stock.marketCap / 1e12).toFixed(2)} triliun`
+      : `$${(stock.marketCap / 1e9).toFixed(2)} miliar`
+    : na;
+
+  return `Saham: ${stock.name} (${stock.symbol}) — ${stock.exchange}
+Harga saat ini: ${fmtP(stock.price)} | Perubahan harian: ${sign(stock.changePercent)}
+Perubahan 1 bulan: ${sign(stock.change1M)} | Perubahan 3 bulan: ${sign(stock.change3M)}
+RSI(14): ${stock.rsi14.toFixed(2)}
+SMA20: ${fmtP(stock.sma20)} — harga ${stock.price >= stock.sma20 ? 'DI ATAS' : 'DI BAWAH'} SMA20
+SMA50: ${fmtP(stock.sma50)} — harga ${stock.price >= stock.sma50 ? 'DI ATAS' : 'DI BAWAH'} SMA50
+20-Day High: ${fmtP(stock.high20d)} | 20-Day Low: ${fmtP(stock.low20d)}
+52-Week High: ${fmtP(stock.high52w)} | 52-Week Low: ${fmtP(stock.low52w)}
+Relative Volume: ${stock.relativeVolume.toFixed(2)}x
+Market Cap: ${mktCap} | P/E: ${peLabel} | EPS: ${epsLabel} | Beta: ${betaLbl}
+Sektor: ${stock.sector ?? na}`;
+}
+
+// ── EN: single user-message prompt (unchanged) ───────────────────────────────
+
+function buildAnalysisPromptEN(stock: StockData): string {
   const trendLabel = stock.change1M > 5 ? 'BULLISH' : stock.change1M < -5 ? 'BEARISH' : 'NEUTRAL';
   const rsiLabel   = stock.rsi14 > 70 ? 'OVERBOUGHT' : stock.rsi14 < 30 ? 'OVERSOLD' : 'NEUTRAL';
   const vsMA20     = stock.price >= stock.sma20 ? 'above' : 'below';
@@ -14,12 +93,11 @@ function buildAnalysisPrompt(stock: StockData, lang: 'id' | 'en'): string {
       ? `Rp${(stock.marketCap / 1e12).toFixed(2)}T`
       : `$${(stock.marketCap / 1e9).toFixed(2)}B`
     : 'N/A';
-
   const isIDR    = stock.currency === 'IDR';
-  const naIDX    = isIDR ? 'Tidak tersedia (IDX)' : 'N/A';
-  const peLabel  = stock.peRatio != null ? stock.peRatio.toFixed(2)  : naIDX;
-  const epsLabel = stock.eps     != null ? stock.eps.toFixed(2)       : naIDX;
-  const betaLbl  = stock.beta    != null ? stock.beta.toFixed(2)      : naIDX;
+  const naIDX    = isIDR ? 'Not available (IDX)' : 'N/A';
+  const peLabel  = stock.peRatio != null ? stock.peRatio.toFixed(2) : naIDX;
+  const epsLabel = stock.eps     != null ? stock.eps.toFixed(2)      : naIDX;
+  const betaLbl  = stock.beta    != null ? stock.beta.toFixed(2)     : naIDX;
 
   const data = `Stock: ${stock.name} (${stock.symbol}) — ${stock.exchange}
 Price: ${stock.currency} ${stock.price.toFixed(2)} | Daily: ${stock.changePercent.toFixed(2)}%
@@ -32,24 +110,6 @@ Relative Volume: ${stock.relativeVolume}x
 52-Week High: ${stock.high52w.toFixed(2)} | 52-Week Low: ${stock.low52w.toFixed(2)}
 Market Cap: ${mktCap} | P/E: ${peLabel} | EPS: ${epsLabel}
 Beta: ${betaLbl} | Sector: ${stock.sector ?? 'N/A'}`;
-
-  if (lang === 'id') {
-    return `Kamu adalah analis saham profesional. Analisis data berikut dan tulis tepat 4 paragraf ringkas — tanpa header, tanpa bullet point, tanpa markdown, hanya 4 paragraf teks biasa yang dipisahkan baris kosong. Gunakan bahasa Indonesia dengan terminologi trading yang lazim (boleh campur istilah teknikal Inggris seperti support, resistance, bullish, bearish, dll).
-
-${data}
-
-ATURAN GROUNDING (WAJIB DIIKUTI — TANPA PENGECUALIAN):
-- Setiap klaim tren (naik/turun/sideways) WAJIB menyebutkan angka persentase persis dari data di atas
-- Jika suatu nilai data adalah N/A atau 0, tulis "data tidak tersedia" — JANGAN mengarang angka
-- JANGAN menulis klaim vague tanpa angka (contoh DILARANG: "saham terlihat lemah" tanpa menyebut RSI atau persentase)
-- Kesimpulan sentimen (BULLISH/BEARISH/NEUTRAL) WAJIB disertai minimal 2 data poin numerik sebagai dasar di kalimat yang sama
-
-Tulis tepat 4 paragraf:
-Paragraf 1 (Tren & Momentum): Sebutkan perubahan 1 bulan PERSIS (${stock.change1M.toFixed(2)}%) dan perubahan 3 bulan PERSIS (${stock.change3M.toFixed(2)}%). Nyatakan posisi harga saat ini (${stock.price.toFixed(2)}) terhadap SMA20 (${stock.sma20.toFixed(2)}) dan SMA50 (${stock.sma50.toFixed(2)}) dengan angka tepat tersebut. Akhiri paragraf ini dengan kesimpulan sentimen (BULLISH/BEARISH/NEUTRAL) yang disertai 2 data poin numerik sebagai dasar.
-Paragraf 2 (Support & Resistance): WAJIB sebutkan keempat level harga ini secara eksplisit: 20-Day Low ${stock.low20d.toFixed(2)}, 20-Day High ${stock.high20d.toFixed(2)}, 52-Week Low ${stock.low52w.toFixed(2)}, 52-Week High ${stock.high52w.toFixed(2)}. Jelaskan implikasinya terhadap harga saat ini (${stock.price.toFixed(2)}).
-Paragraf 3 (RSI & Moving Average): WAJIB tulis nilai RSI persis: "RSI(14) saat ini berada di ${stock.rsi14.toFixed(1)}" dan klasifikasikan (overbought >70, oversold <30, netral di antara). Bandingkan harga (${stock.price.toFixed(2)}) vs SMA20 (${stock.sma20.toFixed(2)}) dan SMA50 (${stock.sma50.toFixed(2)}) dengan angka tepat dan jelaskan implikasinya.
-Paragraf 4 (Risiko Utama): Satu risiko spesifik dan konkret untuk saham ini, dengan minimal satu angka dari data di atas sebagai dasar. Bukan pernyataan umum.`;
-  }
 
   return `You are a professional stock analyst. Analyze the following data and write exactly 4 concise paragraphs — no headers, no bullet points, no markdown, just 4 plain paragraphs separated by a blank line.
 
@@ -67,6 +127,8 @@ Paragraph 2 (Support & Resistance): MUST explicitly name all four levels: 20-Day
 Paragraph 3 (RSI & Moving Averages): MUST write the exact RSI value: "RSI(14) is currently at ${stock.rsi14.toFixed(1)}" and classify it (overbought >70, oversold <30, neutral otherwise). Compare price (${stock.price.toFixed(2)}) to SMA20 (${stock.sma20.toFixed(2)}) and SMA50 (${stock.sma50.toFixed(2)}) with exact numbers and explain the near-term implication.
 Paragraph 4 (Key Risk): One specific, concrete risk for this stock backed by at least one exact number from the data above. Not a generic statement.`;
 }
+
+// ── Compare prompt (unchanged) ────────────────────────────────────────────────
 
 function buildComparePrompt(s1: StockData, s2: StockData, lang: 'id' | 'en'): string {
   const fmt = (s: StockData) =>
@@ -93,6 +155,10 @@ Paragraph 2: Compare fundamentals and valuation.
 Paragraph 3: Clear recommendation — which is the better opportunity right now and why. Name both tickers.`;
 }
 
+// ── Route handler ─────────────────────────────────────────────────────────────
+
+type Message = { role: 'system' | 'user'; content: string };
+
 export async function POST(request: NextRequest) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
@@ -104,11 +170,22 @@ export async function POST(request: NextRequest) {
     const { type, stockData, stock1Data, stock2Data, language } = body;
     const lang: 'id' | 'en' = language === 'en' ? 'en' : 'id';
 
-    let prompt: string;
+    let messages: Message[];
+    let maxTokens = 1500;
+
     if (type === 'compare' && stock1Data && stock2Data) {
-      prompt = buildComparePrompt(stock1Data as StockData, stock2Data as StockData, lang);
+      messages = [{ role: 'user', content: buildComparePrompt(stock1Data as StockData, stock2Data as StockData, lang) }];
     } else if (stockData) {
-      prompt = buildAnalysisPrompt(stockData as StockData, lang);
+      if (lang === 'id') {
+        // New: proper system + user split for Indonesian analysis
+        messages = [
+          { role: 'system', content: ANALYSIS_SYSTEM_PROMPT_ID },
+          { role: 'user', content: buildDataMessageID(stockData as StockData) },
+        ];
+        maxTokens = 800; // max ~300 words as instructed
+      } else {
+        messages = [{ role: 'user', content: buildAnalysisPromptEN(stockData as StockData) }];
+      }
     } else {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
@@ -116,8 +193,8 @@ export async function POST(request: NextRequest) {
     const client = new Groq({ apiKey });
     const completion = await client.chat.completions.create({
       model: MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1500,
+      messages,
+      max_tokens: maxTokens,
       temperature: 0.3,
     });
 
