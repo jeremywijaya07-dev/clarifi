@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const NAV_LINKS = [
@@ -34,6 +34,7 @@ function ClarifiLogo() {
 export default function Navbar() {
   const pathname = usePathname();
   const [dark, setDark] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('theme');
@@ -41,6 +42,9 @@ export default function Navbar() {
     setDark(isDark);
     document.documentElement.classList.toggle('dark', isDark);
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   const toggleTheme = () => {
     const next = !dark;
@@ -62,8 +66,8 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Nav links */}
-          <div className="flex items-center gap-0.5">
+          {/* Nav links — desktop only */}
+          <div className="hidden sm:flex items-center gap-0.5">
             <Link
               href="/"
               className="px-3 py-2 text-sm font-medium text-gray-400 dark:text-[#6B7280] hover:text-gray-700 dark:hover:text-[#9CA3AF] transition-colors"
@@ -91,26 +95,78 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Feedback */}
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSclVEEoD3bx1bDLgs4K4QmgLNxRu3irogjDnqrQOddrrufuIg/viewform?usp=publish-editor"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border border-[#0EA5E9]/30 text-[#9CA3AF] hover:text-[#0EA5E9] hover:border-[#0EA5E9] rounded-lg transition-colors"
-          >
-            Feedback 💬
-          </a>
+          {/* Right side */}
+          <div className="flex items-center gap-1">
+            {/* Feedback — desktop only */}
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSclVEEoD3bx1bDLgs4K4QmgLNxRu3irogjDnqrQOddrrufuIg/viewform?usp=publish-editor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border border-[#0EA5E9]/30 text-[#9CA3AF] hover:text-[#0EA5E9] hover:border-[#0EA5E9] rounded-lg transition-colors"
+            >
+              Feedback 💬
+            </a>
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="Toggle theme"
-          >
-            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle theme"
+            >
+              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
+            {/* Hamburger — mobile only */}
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              className="sm:hidden p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div className="sm:hidden border-t border-gray-100 dark:border-[#1F2937] bg-white dark:bg-[#0F172A] px-4 py-3 space-y-0.5">
+          <Link
+            href="/"
+            onClick={() => setMenuOpen(false)}
+            className="block px-3 py-2.5 text-sm font-medium text-gray-400 dark:text-[#6B7280] hover:text-gray-700 dark:hover:text-[#9CA3AF] rounded-lg transition-colors"
+          >
+            ← Home
+          </Link>
+          {NAV_LINKS.map(({ href, label }) => {
+            const active = href === '/app' ? pathname === '/app' : pathname === href || pathname.startsWith(href + '/');
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                className={`block px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                  active
+                    ? 'bg-[#0EA5E9]/10 text-[#0EA5E9]'
+                    : 'text-gray-600 dark:text-[#9CA3AF] hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+          <div className="pt-2 border-t border-gray-100 dark:border-[#1F2937]">
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSclVEEoD3bx1bDLgs4K4QmgLNxRu3irogjDnqrQOddrrufuIg/viewform?usp=publish-editor"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-3 py-2.5 text-sm font-medium text-gray-500 dark:text-[#9CA3AF] hover:text-[#0EA5E9] transition-colors"
+            >
+              Feedback 💬
+            </a>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

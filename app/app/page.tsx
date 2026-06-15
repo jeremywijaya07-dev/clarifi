@@ -237,6 +237,58 @@ function LoadingSkeleton() {
   );
 }
 
+// ── Top Movers bar ───────────────────────────────────────────────────────────
+
+const TOP_MOVERS_TICKERS = ['BBCA', 'BBRI', 'GOTO', 'TLKM', 'AAPL', 'NVDA', 'TSLA', 'MSFT'];
+
+interface MoverData {
+  symbol: string;
+  changePercent: number | null;
+  loading: boolean;
+}
+
+function TopMoversBar({ onSelect }: { onSelect: (sym: string) => void }) {
+  const [movers, setMovers] = useState<MoverData[]>(
+    TOP_MOVERS_TICKERS.map(sym => ({ symbol: sym, changePercent: null, loading: true })),
+  );
+
+  useEffect(() => {
+    Promise.all(
+      TOP_MOVERS_TICKERS.map(sym =>
+        fetch(`/api/stock?symbol=${encodeURIComponent(sym)}`)
+          .then(r => r.json())
+          .then(d => ({ symbol: sym, changePercent: (d as StockData).changePercent ?? null, loading: false }))
+          .catch(() => ({ symbol: sym, changePercent: null, loading: false })),
+      ),
+    ).then(results => setMovers(results));
+  }, []);
+
+  return (
+    <div className="max-w-[680px] mx-auto mb-3">
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+        {movers.map(m => (
+          <button
+            key={m.symbol}
+            onClick={() => onSelect(m.symbol)}
+            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-lg text-left hover:border-[#0EA5E9] hover:shadow-sm transition-all"
+          >
+            <span className="text-xs font-bold text-gray-700 dark:text-[#F9FAFB]">{m.symbol}</span>
+            {m.loading ? (
+              <span className="text-[10px] text-gray-300 dark:text-gray-600 tracking-widest">···</span>
+            ) : m.changePercent != null ? (
+              <span className={`text-[10px] font-semibold ${m.changePercent >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                {m.changePercent >= 0 ? '+' : ''}{m.changePercent.toFixed(2)}%
+              </span>
+            ) : (
+              <span className="text-[10px] text-gray-300 dark:text-gray-600">—</span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 function StockAnalysis() {
@@ -371,6 +423,9 @@ function StockAnalysis() {
             </p>
           </div>
         </div>
+
+        {/* Top Movers */}
+        <TopMoversBar onSelect={sym => { setQuery(sym); fetchStock(sym); }} />
 
         {/* Quick Picks — separate card */}
         <div className="mb-5 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
@@ -618,38 +673,30 @@ function StockAnalysis() {
               {/* Fundamentals */}
               {hasFundamentals && (() => {
                 const isIDX = isIDXStock(stock);
-                const idxNote = 'Tidak tersedia untuk saham IDX';
                 return (
                   <div className="card p-4">
                     <h2 className="card-title mb-3">Fundamentals</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       <MetricBox label="Market Cap" value={formatLargeNumber(stock.marketCap, stock.currency)} />
-                      <MetricBox
-                        label="P/E Ratio"
-                        value={stock.peRatio != null ? stock.peRatio.toFixed(2) : '—'}
-                        sub={stock.peRatio == null && isIDX ? idxNote : undefined}
-                        subColor="text-[#9CA3AF]"
-                      />
+                      <MetricBox label="P/E Ratio"  value={stock.peRatio != null ? stock.peRatio.toFixed(2) : '—'} />
                       <MetricBox
                         label="EPS (TTM)"
                         value={stock.eps != null
                           ? `${stock.currency === 'IDR' ? 'Rp' : '$'}${stock.eps.toFixed(2)}`
                           : '—'}
-                        sub={stock.eps == null && isIDX ? idxNote : undefined}
-                        subColor="text-[#9CA3AF]"
                       />
-                      <MetricBox
-                        label="Beta"
-                        value={stock.beta != null ? stock.beta.toFixed(2) : '—'}
-                        sub={stock.beta == null && isIDX ? idxNote : undefined}
-                        subColor="text-[#9CA3AF]"
-                      />
+                      <MetricBox label="Beta"      value={stock.beta != null ? stock.beta.toFixed(2) : '—'} />
                       <MetricBox
                         label="Div. Yield"
-                        value={stock.dividendYield != null ? `${(stock.dividendYield * 100).toFixed(2)}%` : 'N/A'}
+                        value={stock.dividendYield != null ? `${(stock.dividendYield * 100).toFixed(2)}%` : '—'}
                       />
-                      <MetricBox label="Sector" value={stock.sector ?? 'N/A'} />
+                      <MetricBox label="Sector" value={stock.sector ?? '—'} />
                     </div>
+                    {isIDX && (stock.peRatio == null || stock.eps == null || stock.beta == null) && (
+                      <p className="text-[10px] text-[#9CA3AF] mt-2">
+                        * P/E, EPS &amp; Beta terbatas untuk saham IDX — lihat laporan keuangan emiten.
+                      </p>
+                    )}
                   </div>
                 );
               })()}

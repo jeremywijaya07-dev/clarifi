@@ -35,8 +35,28 @@ interface Props {
   height?: number | string;
 }
 
+const SKEL_BARS = [38,52,44,60,48,68,54,62,50,72,58,66,55,70,63,74,61,78,67,82];
+
+function ChartSkeleton({ height }: { height: number | string }) {
+  const h = typeof height === 'number' ? height : 340;
+  const barH = Math.round(h * 0.35);
+  return (
+    <div className="w-full bg-gray-50 dark:bg-gray-800/30 animate-pulse" style={{ height }}>
+      {[20, 40, 60, 80].map(p => (
+        <div key={p} className="absolute w-full border-t border-gray-200 dark:border-gray-700/40" style={{ top: `${p}%` }} />
+      ))}
+      <div className="absolute bottom-0 left-0 right-0 flex items-end gap-0.5 px-3 pb-3" style={{ height: barH }}>
+        {SKEL_BARS.map((pct, i) => (
+          <div key={i} className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-sm" style={{ height: `${pct}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TradingViewChart({ symbol, exchange, currency = 'USD', height = 520 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [chartReady, setChartReady] = useState(false);
   // Track Clarifi's dark/light theme reactively via MutationObserver
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
@@ -53,11 +73,15 @@ export default function TradingViewChart({ symbol, exchange, currency = 'USD', h
     const el = containerRef.current;
     if (!el) return;
 
+    setChartReady(false);
+
     const tvSymbol   = toTVSymbol(symbol, exchange, currency);
     const containerId = `tv_${symbol.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
 
     el.innerHTML = '';
     el.id = containerId;
+
+    let readyTimer: ReturnType<typeof setTimeout>;
 
     const buildWidget = () => {
       if (!window.TradingView || !document.getElementById(containerId)) return;
@@ -76,6 +100,7 @@ export default function TradingViewChart({ symbol, exchange, currency = 'USD', h
         hide_side_toolbar:   false,
         container_id:        containerId,
       });
+      readyTimer = setTimeout(() => setChartReady(true), 1800);
     };
 
     const TV_SRC = 'https://s3.tradingview.com/tv.js';
@@ -100,11 +125,19 @@ export default function TradingViewChart({ symbol, exchange, currency = 'USD', h
     }
 
     return () => {
+      clearTimeout(readyTimer);
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
   }, [symbol, exchange, currency, theme]);
 
   return (
-    <div ref={containerRef} style={{ height }} className="w-full rounded overflow-hidden" />
+    <div className="relative w-full" style={{ height }}>
+      {!chartReady && <ChartSkeleton height={height} />}
+      <div
+        ref={containerRef}
+        style={{ height }}
+        className={`w-full rounded overflow-hidden ${!chartReady ? 'invisible' : ''}`}
+      />
+    </div>
   );
 }

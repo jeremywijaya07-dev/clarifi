@@ -2,8 +2,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Trash2, RefreshCw, BookmarkCheck, ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { StockData } from '@/lib/types';
+import { StockData, PricePoint } from '@/lib/types';
 import { formatCurrency, formatPercent, getTrendSignal, getRSISignal } from '@/lib/utils';
+
+function Sparkline({ history }: { history: PricePoint[] }) {
+  const pts = history.slice(-20);
+  if (pts.length < 2) return <div className="w-20 h-7 shrink-0" />;
+  const closes = pts.map(p => p.close);
+  const min = Math.min(...closes);
+  const max = Math.max(...closes);
+  const range = max - min || 1;
+  const W = 80; const H = 28;
+  const polyPoints = closes
+    .map((c, i) => `${(i / (closes.length - 1)) * W},${H - ((c - min) / range) * (H - 4) - 2}`)
+    .join(' ');
+  const isUp = closes[closes.length - 1] >= closes[0];
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="shrink-0 opacity-80">
+      <polyline points={polyPoints} fill="none"
+        stroke={isUp ? '#10B981' : '#EF4444'}
+        strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 interface WatchItem {
   symbol: string;
@@ -205,7 +226,10 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
           </div>
         </Link>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          {data.priceHistory?.length > 1 && (
+            <Sparkline history={data.priceHistory} />
+          )}
           <div className="text-right hidden sm:block">
             <p className="text-[10px] text-gray-400 dark:text-gray-500">RSI</p>
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{data.rsi14}</p>
