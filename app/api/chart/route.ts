@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PricePoint } from '@/lib/types';
 
 type Timeframe = '1m' | '5m' | '15m' | '1H' | '1W' | '1M';
+type Period = '1M' | '3M' | '6M' | '1Y';
 
 const TF_CONFIG: Record<Timeframe, { interval: string; range: string }> = {
   '1m':  { interval: '1m',  range: '7d'  },
@@ -10,6 +11,13 @@ const TF_CONFIG: Record<Timeframe, { interval: string; range: string }> = {
   '1H':  { interval: '60m', range: '60d' },
   '1W':  { interval: '1wk', range: '5y'  },
   '1M':  { interval: '1mo', range: 'max' },
+};
+
+const PERIOD_CONFIG: Record<Period, { interval: string; range: string }> = {
+  '1M': { interval: '1d', range: '1mo' },
+  '3M': { interval: '1d', range: '3mo' },
+  '6M': { interval: '1d', range: '6mo' },
+  '1Y': { interval: '1d', range: '1y'  },
 };
 
 const INTRADAY = new Set<string>(['1m', '5m', '15m']);
@@ -35,18 +43,34 @@ function smaAt(closes: number[], i: number, period: number): number | null {
 }
 
 export async function GET(request: NextRequest) {
-  const symbol    = request.nextUrl.searchParams.get('symbol') ?? '';
-  const timeframe = (request.nextUrl.searchParams.get('timeframe') ?? '') as Timeframe;
+  const symbol      = request.nextUrl.searchParams.get('symbol') ?? '';
+  const periodParam = request.nextUrl.searchParams.get('period') as Period | null;
+  const timeframe   = (request.nextUrl.searchParams.get('timeframe') ?? '') as Timeframe;
 
-  if (!symbol)    return NextResponse.json({ error: 'symbol required' }, { status: 400 });
-  if (!TF_CONFIG[timeframe]) {
-    return NextResponse.json({ error: `Unknown timeframe: ${timeframe}` }, { status: 400 });
+  if (!symbol) return NextResponse.json({ error: 'symbol required' }, { status: 400 });
+
+  let interval: string;
+  let range: string;
+  let showSMA: boolean;
+  let isIntraday: boolean;
+
+  if (periodParam) {
+    if (!PERIOD_CONFIG[periodParam]) {
+      return NextResponse.json({ error: `Unknown period: ${periodParam}` }, { status: 400 });
+    }
+    ({ interval, range } = PERIOD_CONFIG[periodParam]);
+    showSMA = false;
+    isIntraday = false;
+  } else {
+    if (!TF_CONFIG[timeframe]) {
+      return NextResponse.json({ error: `Unknown timeframe: ${timeframe}` }, { status: 400 });
+    }
+    ({ interval, range } = TF_CONFIG[timeframe]);
+    showSMA = !INTRADAY.has(timeframe);
+    isIntraday = INTRADAY.has(timeframe) || timeframe === '1H';
   }
 
-  const { interval, range } = TF_CONFIG[timeframe];
   const yahooSym  = toYahooSym(symbol);
-  const showSMA   = !INTRADAY.has(timeframe);
-  const isIntraday = INTRADAY.has(timeframe) || timeframe === '1H';
 
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=${interval}&range=${range}`;

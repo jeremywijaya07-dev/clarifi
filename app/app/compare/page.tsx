@@ -10,6 +10,7 @@ import {
 } from '@/lib/utils';
 import TickerAutocomplete from '@/components/TickerAutocomplete';
 import { useLanguage } from '@/lib/useLanguage';
+import CompareChart from '@/components/CompareChart';
 
 
 function isIDXStock(stock: StockData): boolean {
@@ -408,6 +409,9 @@ export default function ComparePage() {
         {/* Comparison table */}
         {stock1 && stock2 && (
           <>
+            {/* Chart overlay */}
+            <CompareChart symbol1={stock1.symbol} symbol2={stock2.symbol} />
+
             {/* Score banner */}
             <div className="flex items-center justify-center gap-6 mb-4">
               <div className="flex items-center gap-2">
