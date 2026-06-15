@@ -237,53 +237,81 @@ function LoadingSkeleton() {
   );
 }
 
-// ── Top Movers bar ───────────────────────────────────────────────────────────
+// ── Top Frequency IDX bar ────────────────────────────────────────────────────
 
-const TOP_MOVERS_TICKERS = ['BBCA', 'BBRI', 'GOTO', 'TLKM', 'AAPL', 'NVDA', 'TSLA', 'MSFT'];
+const IDX_FREQ_UNIVERSE = [
+  'BBCA', 'BBRI', 'BMRI', 'BNGA', 'BBNI', 'MEGA',
+  'TLKM', 'EXCL', 'ISAT',
+  'ASII', 'AALI', 'UNTR',
+  'GOTO', 'BUKA', 'EMTK',
+  'ADRO', 'PTBA', 'ITMG', 'INCO', 'ANTM', 'MDKA', 'AMMN',
+  'UNVR', 'ICBP', 'INDF', 'MYOR', 'AMRT', 'CPIN',
+  'SMGR', 'INTP', 'PGAS', 'AKRA', 'KLBF', 'SIDO', 'MIKA',
+  'BMTR', 'SCMA', 'PWON', 'BSDE', 'CTRA', 'SMRA',
+  'CUAN', 'WIFI', 'PGEO', 'BREN', 'BRPT', 'TPIA',
+  'DSSA', 'INKP', 'TKIM', 'BUMI', 'BRMS', 'DCII',
+  'JSMR', 'MAPI', 'ARTO', 'HRUM', 'MEDC', 'BULL',
+  'BJBR', 'BJTM', 'BTPS', 'HEAL', 'PRDA', 'ESSA',
+  'LPKR', 'KIJA', 'DMAS', 'MBMA', 'NCKL',
+];
 
-interface MoverData {
+interface FreqData {
   symbol: string;
+  relVol: number;
   changePercent: number | null;
-  loading: boolean;
 }
 
-function TopMoversBar({ onSelect }: { onSelect: (sym: string) => void }) {
-  const [movers, setMovers] = useState<MoverData[]>(
-    TOP_MOVERS_TICKERS.map(sym => ({ symbol: sym, changePercent: null, loading: true })),
-  );
+function TopFrequencyBar({ onSelect }: { onSelect: (sym: string) => void }) {
+  const [items, setItems] = useState<FreqData[] | null>(null);
 
   useEffect(() => {
     Promise.all(
-      TOP_MOVERS_TICKERS.map(sym =>
+      IDX_FREQ_UNIVERSE.map(sym =>
         fetch(`/api/stock?symbol=${encodeURIComponent(sym)}`)
           .then(r => r.json())
-          .then(d => ({ symbol: sym, changePercent: (d as StockData).changePercent ?? null, loading: false }))
-          .catch(() => ({ symbol: sym, changePercent: null, loading: false })),
+          .then((d: StockData) => {
+            const rv = d.relativeVolume;
+            if (rv != null && rv > 0) {
+              return { symbol: sym, relVol: rv, changePercent: d.changePercent ?? null } as FreqData;
+            }
+            return null;
+          })
+          .catch(() => null),
       ),
-    ).then(results => setMovers(results));
+    ).then(all => {
+      const valid = (all.filter(Boolean) as FreqData[]).sort((a, b) => b.relVol - a.relVol).slice(0, 8);
+      setItems(valid);
+    });
   }, []);
 
   return (
     <div className="max-w-[680px] mx-auto mb-3">
+      <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5 px-0.5">
+        Top Frequency IDX
+      </p>
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-        {movers.map(m => (
-          <button
-            key={m.symbol}
-            onClick={() => onSelect(m.symbol)}
-            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-lg text-left hover:border-[#0EA5E9] hover:shadow-sm transition-all"
-          >
-            <span className="text-xs font-bold text-gray-700 dark:text-[#F9FAFB]">{m.symbol}</span>
-            {m.loading ? (
-              <span className="text-[10px] text-gray-300 dark:text-gray-600 tracking-widest">···</span>
-            ) : m.changePercent != null ? (
-              <span className={`text-[10px] font-semibold ${m.changePercent >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                {m.changePercent >= 0 ? '+' : ''}{m.changePercent.toFixed(2)}%
-              </span>
-            ) : (
-              <span className="text-[10px] text-gray-300 dark:text-gray-600">—</span>
-            )}
-          </button>
-        ))}
+        {items === null
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-lg"
+              >
+                <div className="w-8 h-2.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-6 h-2.5 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            ))
+          : items.map(m => (
+              <button
+                key={m.symbol}
+                onClick={() => onSelect(m.symbol)}
+                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-lg text-left hover:border-[#0EA5E9] hover:shadow-sm transition-all"
+              >
+                <span className="text-xs font-bold text-gray-700 dark:text-[#F9FAFB]">{m.symbol}</span>
+                <span className="text-[10px] font-semibold text-[#0EA5E9]">
+                  {m.relVol.toFixed(1)}x
+                </span>
+              </button>
+            ))}
       </div>
     </div>
   );
@@ -424,8 +452,8 @@ function StockAnalysis() {
           </div>
         </div>
 
-        {/* Top Movers */}
-        <TopMoversBar onSelect={sym => { setQuery(sym); fetchStock(sym); }} />
+        {/* Top Frequency IDX */}
+        <TopFrequencyBar onSelect={sym => { setQuery(sym); fetchStock(sym); }} />
 
         {/* Quick Picks — separate card */}
         <div className="mb-5 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
