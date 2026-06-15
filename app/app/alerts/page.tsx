@@ -55,7 +55,7 @@ export default function AlertsPage() {
   const triggered = alerts.filter(a => a.triggered);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-4">
 
         {/* Header */}
@@ -103,7 +103,7 @@ export default function AlertsPage() {
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
             <Bell className="w-10 h-10 text-gray-200 dark:text-gray-800" />
             <p className="text-gray-500 dark:text-gray-400 text-sm">Belum ada price alert</p>
-            <Link href="/app" className="text-[#1D9E75] hover:underline text-sm font-medium">
+            <Link href="/app" className="text-[#0EA5E9] hover:underline text-sm font-medium">
               Set alert dari halaman Analysis
             </Link>
           </div>
@@ -148,7 +148,7 @@ function AlertCard({ alert, onRemove }: { alert: PriceAlert; onRemove: () => voi
   })();
 
   return (
-    <div className={`bg-white dark:bg-[#111827] rounded-xl border p-4 transition-colors ${
+    <div className={`bg-white dark:bg-[#1E293B] rounded-xl border p-4 transition-colors ${
       alert.triggered
         ? 'border-emerald-200 dark:border-emerald-800/50'
         : 'border-gray-200 dark:border-[#1F2937] hover:border-gray-300 dark:hover:border-gray-700'
@@ -156,7 +156,7 @@ function AlertCard({ alert, onRemove }: { alert: PriceAlert; onRemove: () => voi
       <div className="flex items-start justify-between gap-3">
         <Link href={`/app?symbol=${encodeURIComponent(alert.symbol)}`} className="flex-1 min-w-0 group">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#1D9E75] transition-colors">
+            <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#0EA5E9] transition-colors">
               {alert.symbol}
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[200px]">

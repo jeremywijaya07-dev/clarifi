@@ -85,7 +85,7 @@ export default function StockChat({ stockData }: { stockData: StockData }) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
         <div className="flex items-center gap-2">
-          <Bot className="w-4 h-4 text-[#00A86B]" />
+          <Bot className="w-4 h-4 text-[#0EA5E9]" />
           <h2 className="card-title">Chat dengan AI</h2>
           <span className="text-[10px] text-gray-400 dark:text-gray-600 hidden sm:inline">
             · konteks {stockData.symbol}
@@ -116,7 +116,7 @@ export default function StockChat({ stockData }: { stockData: StockData }) {
                 <button
                   key={q}
                   onClick={() => { setInput(q); setTimeout(() => inputRef.current?.focus(), 50); }}
-                  className="text-[11px] px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-[#00A86B]/10 hover:text-[#00A86B] text-gray-500 dark:text-gray-400 rounded-full transition-colors text-left"
+                  className="text-[11px] px-2.5 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-[#0EA5E9]/10 hover:text-[#0EA5E9] text-gray-500 dark:text-gray-400 rounded-full transition-colors text-left"
                 >
                   {q}
                 </button>
@@ -136,7 +136,7 @@ export default function StockChat({ stockData }: { stockData: StockData }) {
             <div
               className={`max-w-[85%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === 'user'
-                  ? 'bg-[#00A86B] text-white rounded-2xl rounded-br-sm'
+                  ? 'bg-[#0EA5E9] text-white rounded-2xl rounded-br-sm'
                   : 'bg-gray-100 dark:bg-[#1F2937] text-gray-900 dark:text-gray-100 rounded-2xl rounded-bl-sm'
               }`}
             >
@@ -175,13 +175,13 @@ export default function StockChat({ stockData }: { stockData: StockData }) {
             disabled={loading}
             placeholder={`Tanya tentang ${stockData.symbol}...`}
             rows={1}
-            className="flex-1 resize-none px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#00A86B] transition-colors disabled:opacity-50 overflow-y-auto"
+            className="flex-1 resize-none px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#0EA5E9] transition-colors disabled:opacity-50 overflow-y-auto"
             style={{ lineHeight: '1.5rem', maxHeight: '96px' }}
           />
           <button
             onClick={send}
             disabled={loading || !input.trim()}
-            className="p-2.5 bg-[#00A86B] hover:bg-[#009060] disabled:opacity-40 text-white rounded-xl transition-colors shrink-0"
+            className="p-2.5 bg-[#0EA5E9] hover:bg-[#0284C7] disabled:opacity-40 text-white rounded-xl transition-colors shrink-0"
             title="Kirim (Enter)"
           >
             <Send className="w-4 h-4" />

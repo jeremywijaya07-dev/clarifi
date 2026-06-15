@@ -140,7 +140,7 @@ export default function PortfolioPage() {
   if (!initialized) return null;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-4">
 
         {/* Header */}
@@ -154,7 +154,7 @@ export default function PortfolioPage() {
           {items.length > 0 && (
             <button
               onClick={refreshAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Refresh
@@ -164,7 +164,7 @@ export default function PortfolioPage() {
 
         {/* Summary card */}
         {hasLoaded && (
-          <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-3">
               Portfolio Summary
             </p>
@@ -192,7 +192,7 @@ export default function PortfolioPage() {
         )}
 
         {/* Add position form */}
-        <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
+        <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
           <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Add Position</p>
           <div className="flex flex-wrap gap-2">
             <TickerAutocomplete
@@ -202,7 +202,7 @@ export default function PortfolioPage() {
               onEnterPress={handleAdd}
               placeholder="Ticker (e.g. BBRI:IDX)"
               showIcon={false}
-              inputClassName="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#1D9E75] transition-colors"
+              inputClassName="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#0EA5E9] transition-colors"
             />
             <input
               ref={lotsRef}
@@ -213,7 +213,7 @@ export default function PortfolioPage() {
               step="1"
               onChange={e => setLots(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              className="w-24 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#1D9E75] transition-colors"
+              className="w-24 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#0EA5E9] transition-colors"
             />
             <input
               type="number"
@@ -223,12 +223,12 @@ export default function PortfolioPage() {
               step="any"
               onChange={e => setBuyPrice(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              className="w-32 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#1D9E75] transition-colors"
+              className="w-32 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-[#0EA5E9] transition-colors"
             />
             <button
               onClick={handleAdd}
               disabled={adding}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#1D9E75] hover:bg-[#178f68] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#0EA5E9] hover:bg-[#0284C7] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
             >
               {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
               Add
@@ -273,7 +273,7 @@ function PositionCard({ item, onRemove }: { item: PortfolioItem; onRemove: () =>
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 animate-pulse">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 animate-pulse">
         <div className="flex justify-between">
           <div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-1.5" />
@@ -292,7 +292,7 @@ function PositionCard({ item, onRemove }: { item: PortfolioItem; onRemove: () =>
 
   if (error || !data) {
     return (
-      <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-semibold text-gray-900 dark:text-white">{symbol}</p>
@@ -318,13 +318,13 @@ function PositionCard({ item, onRemove }: { item: PortfolioItem; onRemove: () =>
   const plSign = pl >= 0 ? '+' : '-';
 
   return (
-    <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
+    <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <Link href={`/app?symbol=${encodeURIComponent(data.symbol)}`} className="flex-1 min-w-0 group">
 
           {/* Symbol + name + exchange */}
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#1D9E75] transition-colors">
+            <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#0EA5E9] transition-colors">
               {data.symbol}
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[200px]">

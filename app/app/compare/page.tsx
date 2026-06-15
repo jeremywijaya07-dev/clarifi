@@ -58,7 +58,7 @@ function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
 }
 
 const SENTIMENT_CFG = {
-  bullish: { bg: 'bg-[#1D9E75]/10', text: 'text-[#1D9E75]', border: 'border-[#1D9E75]/30' },
+  bullish: { bg: 'bg-[#10B981]/15', text: 'text-[#10B981]', border: 'border-[#10B981]/30' },
   bearish: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30' },
   neutral: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', border: 'border-yellow-500/30' },
 };
@@ -125,12 +125,12 @@ function StockSearchInput({
           onEnterPress={() => load()}
           placeholder="AAPL or BBRI"
           showIcon={false}
-          inputClassName="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/30 focus:border-[#1D9E75] dark:text-white"
+          inputClassName="w-full px-3 py-2 text-sm bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]/30 focus:border-[#0EA5E9] dark:text-white"
         />
         <button
           onClick={() => load()}
           disabled={loading || !sym.trim()}
-          className="px-3 py-2 bg-[#1D9E75] hover:bg-[#178a65] disabled:opacity-50 text-white text-sm rounded-lg transition-colors shrink-0"
+          className="px-3 py-2 bg-[#0EA5E9] hover:bg-[#0284C7] disabled:opacity-50 text-white text-sm rounded-lg transition-colors shrink-0"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Go'}
         </button>
@@ -146,27 +146,27 @@ function StockHeader({ stock, colorClass }: { stock: StockData; colorClass: stri
     {
       label: 'RSI (14)',
       value: `${stock.rsi14} — ${rsiSignal === 'overbought' ? 'Overbought' : rsiSignal === 'oversold' ? 'Oversold' : 'Neutral'}`,
-      valueClass: rsiSignal === 'overbought' ? 'text-[#EF4444]' : rsiSignal === 'oversold' ? 'text-[#1D9E75]' : 'text-gray-700 dark:text-gray-300',
+      valueClass: rsiSignal === 'overbought' ? 'text-[#EF4444]' : rsiSignal === 'oversold' ? 'text-[#10B981]' : 'text-gray-700 dark:text-gray-300',
     },
     {
       label: '1M Change',
       value: formatPercent(stock.change1M),
-      valueClass: stock.change1M >= 0 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+      valueClass: stock.change1M >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]',
     },
     {
       label: '3M Change',
       value: formatPercent(stock.change3M),
-      valueClass: stock.change3M >= 0 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+      valueClass: stock.change3M >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]',
     },
     {
       label: 'vs SMA 20',
       value: stock.price >= stock.sma20 ? '▲ Above' : '▼ Below',
-      valueClass: stock.price >= stock.sma20 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+      valueClass: stock.price >= stock.sma20 ? 'text-[#10B981]' : 'text-[#EF4444]',
     },
     {
       label: 'vs SMA 50',
       value: stock.price >= stock.sma50 ? '▲ Above' : '▼ Below',
-      valueClass: stock.price >= stock.sma50 ? 'text-[#1D9E75]' : 'text-[#EF4444]',
+      valueClass: stock.price >= stock.sma50 ? 'text-[#10B981]' : 'text-[#EF4444]',
     },
   ];
 
@@ -183,7 +183,7 @@ function StockHeader({ stock, colorClass }: { stock: StockData; colorClass: stri
           {formatCurrency(stock.price, stock.currency)}
         </p>
         <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
-          stock.changePercent >= 0 ? 'bg-[#1D9E75]/10 text-[#1D9E75]' : 'bg-[#EF4444]/10 text-[#EF4444]'
+          stock.changePercent >= 0 ? 'bg-[#10B981]/15 text-[#10B981]' : 'bg-[#EF4444]/10 text-[#EF4444]'
         }`}>
           {formatPercent(stock.changePercent)}
         </span>
@@ -326,7 +326,7 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
 function rowValueClass(row: Row, side: 1 | 2): string {
   const raw = side === 1 ? row.rawNum1 : row.rawNum2;
   if (raw != null) {
-    return raw >= 0 ? 'text-[#1D9E75]' : 'text-[#EF4444]';
+    return raw >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]';
   }
   const isWinner = row.winner === side;
   return isWinner
@@ -371,7 +371,7 @@ export default function ComparePage() {
   const verdictBadgeLabel = verdictSentiment ? vt.badge[verdictSentiment] : null;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Compare Stocks</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
@@ -380,7 +380,7 @@ export default function ComparePage() {
 
         {/* Search inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] p-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#2D3748] p-4">
             <StockSearchInput
               label="Stock 1"
               color="text-blue-600 dark:text-blue-400"
@@ -392,7 +392,7 @@ export default function ComparePage() {
               </div>
             )}
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] p-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#2D3748] p-4">
             <StockSearchInput
               label="Stock 2"
               color="text-purple-600 dark:text-purple-400"
@@ -425,7 +425,7 @@ export default function ComparePage() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] overflow-hidden mb-4">
+            <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#2D3748] overflow-hidden mb-4">
               <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-xs font-semibold">
                 <span className="text-blue-600 dark:text-blue-400">{stock1.symbol}</span>
                 <span className="text-center w-8" />
@@ -469,10 +469,10 @@ export default function ComparePage() {
             </div>
 
             {/* AI Verdict */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] overflow-hidden">
+            <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#2D3748] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Sparkles className="w-4 h-4 text-[#1D9E75]" />
+                  <Sparkles className="w-4 h-4 text-[#0EA5E9]" />
                   <span className="font-semibold text-sm text-gray-900 dark:text-white">
                     {vt.title}
                   </span>
@@ -486,14 +486,14 @@ export default function ComparePage() {
                   <button
                     onClick={() => setLang(lang === 'id' ? 'en' : 'id')}
                     title={lang === 'id' ? 'Switch to English' : 'Ganti ke Indonesia'}
-                    className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 dark:border-[#2D3748] text-gray-500 dark:text-gray-400 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+                    className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 dark:border-[#2D3748] text-gray-500 dark:text-gray-400 hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
                   >
                     {vt.langBtn}
                   </button>
                   <button
                     onClick={fetchVerdict}
                     disabled={verdictLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1D9E75] hover:bg-[#178a65] disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0EA5E9] hover:bg-[#0284C7] disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
                   >
                     {verdictLoading ? (
                       <>

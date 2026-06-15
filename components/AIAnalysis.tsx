@@ -71,7 +71,7 @@ function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
 }
 
 const SENTIMENT_CFG = {
-  bullish: { bg: 'bg-[#1D9E75]/10', text: 'text-[#1D9E75]', border: 'border-[#1D9E75]/30' },
+  bullish: { bg: 'bg-[#10B981]/15', text: 'text-[#10B981]', border: 'border-[#10B981]/30' },
   bearish: { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', border: 'border-[#EF4444]/30' },
   neutral: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', border: 'border-yellow-500/30' },
 };
@@ -154,7 +154,7 @@ export default function AIAnalysis({ stockData }: Props) {
     <div className="card overflow-hidden">
       <div className="card-header">
         <div className="flex items-center gap-2 flex-wrap">
-          <Sparkles className="w-4 h-4 text-[#00A86B]" />
+          <Sparkles className="w-4 h-4 text-[#0EA5E9]" />
           <span className="card-title">{t.title}</span>
           <span className="hidden sm:inline text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
             Llama 3.3
@@ -170,7 +170,7 @@ export default function AIAnalysis({ stockData }: Props) {
           <button
             onClick={() => setLang(lang === 'id' ? 'en' : 'id')}
             title={lang === 'id' ? 'Switch to English' : 'Ganti ke Indonesia'}
-            className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 dark:border-[#2D3748] text-gray-500 dark:text-gray-400 hover:border-[#00A86B] hover:text-[#00A86B] transition-colors"
+            className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 dark:border-[#2D3748] text-gray-500 dark:text-gray-400 hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
           >
             {t.langBtn}
           </button>
@@ -185,7 +185,7 @@ export default function AIAnalysis({ stockData }: Props) {
           <button
             onClick={run}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00A86B] hover:bg-[#009060] disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0EA5E9] hover:bg-[#0284C7] disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition-colors"
           >
             {loading ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin" />{t.analyzing}</>

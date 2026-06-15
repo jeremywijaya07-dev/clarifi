@@ -71,44 +71,44 @@ function AppMockup() {
   return (
     <div className="relative w-full max-w-[360px] mx-auto lg:mx-0">
       {/* Glow */}
-      <div className="absolute -inset-6 bg-[#00A86B]/15 rounded-3xl blur-3xl pointer-events-none" />
+      <div className="absolute -inset-6 bg-[#0EA5E9]/15 rounded-3xl blur-3xl pointer-events-none" />
 
       {/* Card */}
-      <div className="relative bg-[#111827] rounded-2xl border border-[#1F2937] p-5 shadow-2xl shadow-black/60">
+      <div className="relative bg-[#1E293B] rounded-2xl border border-[#1F2937] p-5 shadow-2xl shadow-black/60">
         {/* Stock header */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-bold text-[#9CA3AF]">BBRI:IDX</span>
-              <span className="text-[10px] bg-[#00A86B]/15 text-[#00A86B] px-1.5 py-0.5 rounded font-semibold">
+              <span className="text-[10px] bg-[#0EA5E9]/15 text-[#0EA5E9] px-1.5 py-0.5 rounded font-semibold">
                 IDX
               </span>
             </div>
             <div className="text-2xl font-bold text-white">Rp 4,580</div>
-            <div className="text-sm font-semibold text-[#00A86B] mt-0.5">▲ +2.47% today</div>
+            <div className="text-sm font-semibold text-[#10B981] mt-0.5">▲ +2.47% today</div>
           </div>
           <div className="text-right">
             <div className="text-[10px] text-[#9CA3AF] mb-2 max-w-[100px] text-right leading-tight">
               Bank Rakyat Indonesia
             </div>
-            <span className="text-[10px] bg-[#00A86B]/10 text-[#00A86B] border border-[#00A86B]/20 px-2 py-1 rounded-full font-semibold">
+            <span className="text-[10px] bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 px-2 py-1 rounded-full font-semibold">
               Bullish
             </span>
           </div>
         </div>
 
         {/* Mini chart */}
-        <div className="h-[72px] mb-4 rounded-xl overflow-hidden bg-[#0A0F1E]">
+        <div className="h-[72px] mb-4 rounded-xl overflow-hidden bg-[#0F172A]">
           <svg viewBox="0 0 300 72" preserveAspectRatio="none" className="w-full h-full">
             <defs>
               <linearGradient id="mockGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00A86B" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#00A86B" stopOpacity="0" />
+                <stop offset="0%" stopColor="#10B981" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path
               d="M0,62 C20,58 30,55 50,50 C70,45 80,42 100,36 C120,30 130,28 150,22 C170,16 185,12 210,10 C230,8 250,7 270,5 L300,3"
-              stroke="#00A86B"
+              stroke="#10B981"
               strokeWidth="2.5"
               fill="none"
               strokeLinecap="round"
@@ -124,10 +124,10 @@ function AppMockup() {
         <div className="grid grid-cols-3 gap-2 mb-4">
           {[
             { label: 'RSI (14)', value: '58.3', color: 'text-yellow-400' },
-            { label: 'vs SMA20', value: '▲ Above', color: 'text-[#00A86B]' },
+            { label: 'vs SMA20', value: '▲ Above', color: 'text-[#10B981]' },
             { label: 'Rel Vol', value: '1.8x', color: 'text-blue-400' },
           ].map(m => (
-            <div key={m.label} className="bg-[#0A0F1E] rounded-lg p-2 text-center">
+            <div key={m.label} className="bg-[#0F172A] rounded-lg p-2 text-center">
               <div className="text-[10px] text-[#9CA3AF] mb-0.5">{m.label}</div>
               <div className={`text-xs font-bold ${m.color}`}>{m.value}</div>
             </div>
@@ -135,10 +135,10 @@ function AppMockup() {
         </div>
 
         {/* AI Analysis teaser */}
-        <div className="bg-[#00A86B]/8 border border-[#00A86B]/20 rounded-xl p-3 mb-3">
+        <div className="bg-[#0EA5E9]/8 border border-[#0EA5E9]/20 rounded-xl p-3 mb-3">
           <div className="flex items-center gap-1.5 mb-1.5">
             <span className="text-xs">🤖</span>
-            <span className="text-[11px] font-semibold text-[#00A86B]">AI Analysis</span>
+            <span className="text-[11px] font-semibold text-[#0EA5E9]">AI Analysis</span>
           </div>
           <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
             Strong uptrend confirmed — RSI neutral at 58, price above SMA20 &amp; SMA50.
@@ -147,11 +147,11 @@ function AppMockup() {
         </div>
 
         {/* Fair value teaser */}
-        <div className="flex items-center justify-between px-3 py-2 bg-[#0A0F1E] rounded-lg">
+        <div className="flex items-center justify-between px-3 py-2 bg-[#0F172A] rounded-lg">
           <span className="text-[11px] text-[#9CA3AF]">Graham Number</span>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold text-white">Rp 5,120</span>
-            <span className="text-[10px] bg-[#00A86B]/15 text-[#00A86B] px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-[10px] bg-[#10B981]/15 text-[#10B981] px-1.5 py-0.5 rounded-full font-semibold">
               Undervalued
             </span>
           </div>
@@ -167,10 +167,10 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="bg-[#0A0F1E] text-[#F9FAFB] min-h-screen">
+    <div className="bg-[#0F172A] text-[#F9FAFB] min-h-screen">
 
       {/* ── Navbar ── */}
-      <nav className="sticky top-0 z-50 bg-[#0A0F1E]/90 backdrop-blur-md border-b border-[#1F2937]">
+      <nav className="sticky top-0 z-50 bg-[#0F172A]/90 backdrop-blur-md border-b border-[#1F2937]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
 
@@ -194,7 +194,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/app"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-[#00A86B] hover:bg-[#00966F] text-white text-sm font-semibold rounded-xl transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-[#0EA5E9] hover:bg-[#0284C7] text-white text-sm font-semibold rounded-xl transition-colors"
               >
                 Start for Free
               </Link>
@@ -219,7 +219,7 @@ export default function LandingPage() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-[#1F2937] bg-[#0A0F1E] px-4 py-4 space-y-3">
+          <div className="md:hidden border-t border-[#1F2937] bg-[#0F172A] px-4 py-4 space-y-3">
             <a
               href="#features"
               onClick={() => setMenuOpen(false)}
@@ -236,7 +236,7 @@ export default function LandingPage() {
             </a>
             <Link
               href="/app"
-              className="block px-4 py-2.5 bg-[#00A86B] hover:bg-[#00966F] text-white text-sm font-semibold rounded-xl transition-colors text-center"
+              className="block px-4 py-2.5 bg-[#0EA5E9] hover:bg-[#0284C7] text-white text-sm font-semibold rounded-xl transition-colors text-center"
             >
               Start for Free
             </Link>
@@ -247,7 +247,7 @@ export default function LandingPage() {
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-20 pb-24 px-4 sm:px-6">
         {/* Background gradient blobs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#00A86B]/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#0EA5E9]/8 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto">
@@ -256,7 +256,7 @@ export default function LandingPage() {
             {/* Left: Text */}
             <div>
               <FadeIn>
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#00A86B] bg-[#00A86B]/10 border border-[#00A86B]/20 rounded-full mb-6">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#0EA5E9] bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 rounded-full mb-6">
                   ✨ AI-Powered Stock Research
                 </span>
               </FadeIn>
@@ -264,7 +264,7 @@ export default function LandingPage() {
               <FadeIn delay={100}>
                 <h1 className="text-5xl sm:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-6">
                   Clarity in<br />
-                  <span className="text-[#00A86B]">Every Trade</span>
+                  <span className="text-[#0EA5E9]">Every Trade</span>
                 </h1>
               </FadeIn>
 
@@ -279,13 +279,13 @@ export default function LandingPage() {
                 <div className="flex flex-wrap gap-3 mb-7">
                   <Link
                     href="/app"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#00A86B] hover:bg-[#00966F] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#00A86B]/25 text-sm"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#0EA5E9]/25 text-sm"
                   >
                     Start for Free →
                   </Link>
                   <a
                     href="#how-it-works"
-                    className="inline-flex items-center gap-2 px-6 py-3 border border-[#1F2937] hover:border-[#00A86B]/40 text-[#F9FAFB] font-semibold rounded-xl transition-colors text-sm"
+                    className="inline-flex items-center gap-2 px-6 py-3 border border-[#1F2937] hover:border-[#0EA5E9]/40 text-[#F9FAFB] font-semibold rounded-xl transition-colors text-sm"
                   >
                     See Demo
                   </a>
@@ -295,13 +295,13 @@ export default function LandingPage() {
               <FadeIn delay={400}>
                 <div className="flex flex-wrap gap-5 text-sm text-[#9CA3AF]">
                   <span className="flex items-center gap-1.5">
-                    <span className="text-[#00A86B]">✓</span> Free forever
+                    <span className="text-[#10B981]">✓</span> Free forever
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="text-[#00A86B]">✓</span> No signup required
+                    <span className="text-[#10B981]">✓</span> No signup required
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="text-[#00A86B]">✓</span> US + IDX markets
+                    <span className="text-[#10B981]">✓</span> US + IDX markets
                   </span>
                 </div>
               </FadeIn>
@@ -316,7 +316,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" className="py-24 px-4 sm:px-6 bg-[#111827]/50">
+      <section id="features" className="py-24 px-4 sm:px-6 bg-[#1E293B]/50">
         <div className="max-w-7xl mx-auto">
           <FadeIn>
             <div className="text-center mb-14">
@@ -353,9 +353,9 @@ export default function LandingPage() {
               },
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 80}>
-                <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 h-full hover:border-[#00A86B]/30 transition-colors group">
+                <div className="bg-[#1E293B] border border-[#1F2937] rounded-2xl p-6 h-full hover:border-[#0EA5E9]/30 transition-colors group">
                   <div className="text-3xl mb-4">{f.icon}</div>
-                  <h3 className="text-base font-bold text-white mb-3 group-hover:text-[#00A86B] transition-colors">
+                  <h3 className="text-base font-bold text-white mb-3 group-hover:text-[#0EA5E9] transition-colors">
                     {f.title}
                   </h3>
                   <p className="text-sm text-[#9CA3AF] leading-relaxed">{f.desc}</p>
@@ -378,7 +378,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             {/* Connector line */}
-            <div className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-[#00A86B]/30 via-[#00A86B]/60 to-[#00A86B]/30" />
+            <div className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-[#0EA5E9]/30 via-[#0EA5E9]/60 to-[#0EA5E9]/30" />
 
             {[
               {
@@ -403,10 +403,10 @@ export default function LandingPage() {
               <FadeIn key={s.step} delay={i * 120}>
                 <div className="flex flex-col items-center text-center">
                   <div className="relative mb-5">
-                    <div className="w-20 h-20 rounded-2xl bg-[#111827] border border-[#1F2937] flex items-center justify-center text-3xl shadow-lg">
+                    <div className="w-20 h-20 rounded-2xl bg-[#1E293B] border border-[#1F2937] flex items-center justify-center text-3xl shadow-lg">
                       {s.icon}
                     </div>
-                    <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#00A86B] text-white text-xs font-bold flex items-center justify-center">
+                    <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#0EA5E9] text-white text-xs font-bold flex items-center justify-center">
                       {s.step}
                     </div>
                   </div>
@@ -420,7 +420,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="py-24 px-4 sm:px-6 bg-[#111827]/50">
+      <section className="py-24 px-4 sm:px-6 bg-[#1E293B]/50">
         <div className="max-w-6xl mx-auto">
           <FadeIn>
             <div className="text-center mb-14">
@@ -455,7 +455,7 @@ export default function LandingPage() {
               },
             ].map((t, i) => (
               <FadeIn key={t.name} delay={i * 100}>
-                <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 h-full flex flex-col">
+                <div className="bg-[#1E293B] border border-[#1F2937] rounded-2xl p-6 h-full flex flex-col">
                   {/* Stars */}
                   <div className="flex gap-0.5 mb-4">
                     {Array.from({ length: 5 }).map((_, j) => (
@@ -470,7 +470,7 @@ export default function LandingPage() {
                   </p>
 
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#00A86B]/20 text-[#00A86B] text-xs font-bold flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-[#0EA5E9]/20 text-[#0EA5E9] text-xs font-bold flex items-center justify-center shrink-0">
                       {t.initials}
                     </div>
                     <div>
@@ -489,10 +489,10 @@ export default function LandingPage() {
       <section className="py-24 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
           <FadeIn>
-            <div className="bg-gradient-to-br from-[#111827] to-[#0A0F1E] border border-[#1F2937] rounded-3xl px-8 py-16 relative overflow-hidden">
+            <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] border border-[#1F2937] rounded-3xl px-8 py-16 relative overflow-hidden">
               {/* Decorative glow */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#00A86B]/5 to-transparent pointer-events-none" />
-              <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#00A86B]/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0EA5E9]/5 to-transparent pointer-events-none" />
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#0EA5E9]/10 rounded-full blur-3xl pointer-events-none" />
 
               <div className="relative">
                 <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -503,7 +503,7 @@ export default function LandingPage() {
                 </p>
                 <Link
                   href="/app"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-[#00A86B] hover:bg-[#00966F] text-white font-bold rounded-2xl transition-all hover:shadow-xl hover:shadow-[#00A86B]/30 text-base"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-[#0EA5E9] hover:bg-[#0284C7] text-white font-bold rounded-2xl transition-all hover:shadow-xl hover:shadow-[#0EA5E9]/30 text-base"
                 >
                   Start Analyzing Now →
                 </Link>

@@ -50,7 +50,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white dark:bg-[#0A0F1E] border-b border-gray-200 dark:border-[#1F2937]">
+    <nav className="sticky top-0 z-50 bg-white dark:bg-[#0F172A] border-b border-gray-200 dark:border-[#1F2937]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
 
@@ -78,13 +78,13 @@ export default function Navbar() {
                   href={href}
                   className={`relative px-3 py-2 text-sm font-medium transition-colors ${
                     active
-                      ? 'text-[#00A86B]'
+                      ? 'text-[#0EA5E9]'
                       : 'text-gray-500 dark:text-[#9CA3AF] hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   {label}
                   {active && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-[#00A86B] rounded-full" />
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-[#0EA5E9] rounded-full" />
                   )}
                 </Link>
               );
@@ -96,7 +96,7 @@ export default function Navbar() {
             href="https://docs.google.com/forms/d/e/1FAIpQLSclVEEoD3bx1bDLgs4K4QmgLNxRu3irogjDnqrQOddrrufuIg/viewform?usp=publish-editor"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border border-[#00A86B]/30 text-[#9CA3AF] hover:text-[#00A86B] hover:border-[#00A86B] rounded-lg transition-colors"
+            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium border border-[#0EA5E9]/30 text-[#9CA3AF] hover:text-[#0EA5E9] hover:border-[#0EA5E9] rounded-lg transition-colors"
           >
             Feedback 💬
           </a>

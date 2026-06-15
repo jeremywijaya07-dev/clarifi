@@ -80,7 +80,7 @@ function FilterChip({
   label: string; active: boolean; onClick: () => void; color?: 'green' | 'red' | 'blue' | 'amber';
 }) {
   const activeStyle = {
-    green: 'bg-[#00A86B]/10 border-[#00A86B] text-[#00A86B]',
+    green: 'bg-[#0EA5E9]/10 border-[#0EA5E9] text-[#0EA5E9]',
     red:   'bg-red-500/10 border-red-400 text-[#E24B4A]',
     blue:  'bg-blue-500/10 border-blue-400 text-blue-600 dark:text-blue-400',
     amber: 'bg-amber-500/10 border-amber-400 text-amber-600 dark:text-amber-400',
@@ -109,7 +109,7 @@ function SortHeader({
   return (
     <button
       onClick={() => onSort(sortKey)}
-      className="flex items-center gap-1 text-left hover:text-[#00A86B] transition-colors whitespace-nowrap"
+      className="flex items-center gap-1 text-left hover:text-[#0EA5E9] transition-colors whitespace-nowrap"
     >
       {label}
       {active ? (
@@ -181,13 +181,13 @@ export default function ScreenerPage() {
   const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-4">
 
         {/* Header */}
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Filter className="w-5 h-5 text-[#00A86B]" />
+            <Filter className="w-5 h-5 text-[#0EA5E9]" />
             Screener IDX
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -196,7 +196,7 @@ export default function ScreenerPage() {
         </div>
 
         {/* Filter card */}
-        <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 space-y-3">
+        <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 space-y-3">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Filter</p>
 
           <div className="grid gap-3">
@@ -262,7 +262,7 @@ export default function ScreenerPage() {
             <button
               onClick={scan}
               disabled={scanning}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#00A86B] hover:bg-[#009060] disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#0EA5E9] hover:bg-[#0284C7] disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${scanning ? 'animate-spin' : ''}`} />
               {scanning ? `Scanning ${progress.done}/${progress.total}…` : scanned ? 'Scan Ulang' : 'Scan Sekarang'}
@@ -281,7 +281,7 @@ export default function ScreenerPage() {
           {scanning && (
             <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-[#00A86B] h-full rounded-full transition-all duration-300"
+                className="bg-[#0EA5E9] h-full rounded-full transition-all duration-300"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -301,18 +301,18 @@ export default function ScreenerPage() {
             </div>
 
             {results.length === 0 ? (
-              <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-12 text-center">
+              <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-12 text-center">
                 <Filter className="w-8 h-8 text-gray-200 dark:text-gray-800 mx-auto mb-3" />
                 <p className="text-gray-500 dark:text-gray-400 text-sm">Tidak ada saham yang cocok dengan filter ini</p>
                 <button
                   onClick={() => setFilters(EMPTY_FILTERS)}
-                  className="mt-3 text-xs text-[#00A86B] hover:underline"
+                  className="mt-3 text-xs text-[#0EA5E9] hover:underline"
                 >
                   Reset semua filter
                 </button>
               </div>
             ) : (
-              <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] overflow-hidden">
+              <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -377,13 +377,13 @@ export default function ScreenerPage() {
                             <td className="px-3 py-2.5 text-right font-semibold text-gray-900 dark:text-white text-[13px] whitespace-nowrap">
                               {formatCurrency(s.price, s.currency)}
                             </td>
-                            <td className={`px-3 py-2.5 text-right text-[13px] font-semibold whitespace-nowrap ${s.changePercent >= 0 ? 'text-[#00A86B]' : 'text-[#E24B4A]'}`}>
+                            <td className={`px-3 py-2.5 text-right text-[13px] font-semibold whitespace-nowrap ${s.changePercent >= 0 ? 'text-[#10B981]' : 'text-[#E24B4A]'}`}>
                               {formatPercent(s.changePercent)}
                             </td>
-                            <td className={`px-3 py-2.5 text-right text-[13px] font-semibold whitespace-nowrap ${s.change1M >= 0 ? 'text-[#00A86B]' : 'text-[#E24B4A]'}`}>
+                            <td className={`px-3 py-2.5 text-right text-[13px] font-semibold whitespace-nowrap ${s.change1M >= 0 ? 'text-[#10B981]' : 'text-[#E24B4A]'}`}>
                               {formatPercent(s.change1M)}
                             </td>
-                            <td className={`px-3 py-2.5 text-right text-[13px] font-semibold whitespace-nowrap ${s.change3M >= 0 ? 'text-[#00A86B]' : 'text-[#E24B4A]'}`}>
+                            <td className={`px-3 py-2.5 text-right text-[13px] font-semibold whitespace-nowrap ${s.change3M >= 0 ? 'text-[#10B981]' : 'text-[#E24B4A]'}`}>
                               {formatPercent(s.change3M)}
                             </td>
                             <td className={`px-3 py-2.5 text-right font-bold text-[13px] ${rsiColor}`}>
@@ -392,7 +392,7 @@ export default function ScreenerPage() {
                             <td className="px-3 py-2.5 text-center">
                               <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
                                 aboveSMA20
-                                  ? 'bg-[#00A86B]/10 text-[#00A86B]'
+                                  ? 'bg-[#10B981]/10 text-[#10B981]'
                                   : 'bg-red-500/10 text-[#E24B4A]'
                               }`}>
                                 {aboveSMA20 ? '▲' : '▼'}
@@ -401,7 +401,7 @@ export default function ScreenerPage() {
                             <td className="px-3 py-2.5 text-center">
                               <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
                                 aboveSMA50
-                                  ? 'bg-[#00A86B]/10 text-[#00A86B]'
+                                  ? 'bg-[#10B981]/10 text-[#10B981]'
                                   : 'bg-red-500/10 text-[#E24B4A]'
                               }`}>
                                 {aboveSMA50 ? '▲' : '▼'}
@@ -423,7 +423,7 @@ export default function ScreenerPage() {
 
         {/* Pre-scan placeholder */}
         {!scanned && !scanning && (
-          <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-12 text-center">
+          <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-12 text-center">
             <Filter className="w-8 h-8 text-gray-200 dark:text-gray-800 mx-auto mb-3" />
             <p className="text-gray-500 dark:text-gray-400 text-sm">
               Klik <span className="font-semibold text-gray-700 dark:text-gray-300">Scan Sekarang</span> untuk mulai screening

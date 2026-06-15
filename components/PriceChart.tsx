@@ -53,12 +53,12 @@ function fmtTooltipDate(dateStr: string, tf: Timeframe): string {
 function CustomTooltip({ active, payload, label, currency = 'USD', timeframe = '1D' }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const KEYS = [
-    { key: 'close', label: 'Price',  color: '#00A86B' },
+    { key: 'close', label: 'Price',  color: '#10B981' },
     { key: 'sma20', label: 'SMA 20', color: '#f59e0b' },
     { key: 'sma50', label: 'SMA 50', color: '#6366f1' },
   ];
   return (
-    <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] rounded-lg p-2.5 shadow-lg text-xs min-w-[140px]">
+    <div className="bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#1F2937] rounded-lg p-2.5 shadow-lg text-xs min-w-[140px]">
       <p className="text-gray-400 dark:text-[#6B7280] mb-1.5 font-medium">
         {label ? fmtTooltipDate(label, timeframe) : ''}
       </p>
@@ -143,14 +143,14 @@ export default function PriceChart({ data, currency = 'USD', symbol }: Props) {
             disabled={loading}
             className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors disabled:opacity-50 ${
               timeframe === tf
-                ? 'bg-[#00A86B] text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-[#00A86B]/10 hover:text-[#00A86B] dark:hover:text-[#00A86B]'
+                ? 'bg-[#0EA5E9] text-white'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-[#0EA5E9]/10 hover:text-[#0EA5E9] dark:hover:text-[#0EA5E9]'
             }`}
           >
             {tf}
           </button>
         ))}
-        {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#00A86B] ml-1" />}
+        {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0EA5E9] ml-1" />}
       </div>
 
       {/* Error banner */}
@@ -164,8 +164,8 @@ export default function PriceChart({ data, currency = 'USD', symbol }: Props) {
       {/* Chart area */}
       <div className="relative w-full h-60">
         {loading && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-[#111827]/60 flex items-center justify-center rounded z-10">
-            <Loader2 className="w-5 h-5 animate-spin text-[#00A86B]" />
+          <div className="absolute inset-0 bg-white/60 dark:bg-[#1E293B]/60 flex items-center justify-center rounded z-10">
+            <Loader2 className="w-5 h-5 animate-spin text-[#0EA5E9]" />
           </div>
         )}
         <ResponsiveContainer width="100%" height="100%">
@@ -192,7 +192,7 @@ export default function PriceChart({ data, currency = 'USD', symbol }: Props) {
               {displayData.map((entry, i) => {
                 const prev = i > 0 ? displayData[i - 1].close : entry.close;
                 return (
-                  <Cell key={`c-${i}`} fill={entry.close >= prev ? '#00A86B' : '#EF4444'} fillOpacity={0.9} />
+                  <Cell key={`c-${i}`} fill={entry.close >= prev ? '#10B981' : '#EF4444'} fillOpacity={0.9} />
                 );
               })}
             </Bar>
@@ -209,7 +209,7 @@ export default function PriceChart({ data, currency = 'USD', symbol }: Props) {
       {/* Legend */}
       <div className="flex items-center gap-5 mt-2 text-[11px] text-[#6B7280]">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-2 inline-block rounded-sm bg-[#00A86B]" /> Price
+          <span className="w-3 h-2 inline-block rounded-sm bg-[#10B981]" /> Price
         </span>
         {showSMA ? (
           <>

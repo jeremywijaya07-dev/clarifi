@@ -24,7 +24,7 @@ const AUTO_REFRESH_MS = 5 * 60 * 1000;
 
 function NewsSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
+    <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="px-4 py-3.5 space-y-2 animate-pulse">
           <div className="h-3.5 bg-gray-200 dark:bg-gray-800 rounded w-full" />
@@ -65,14 +65,14 @@ export default function NewsPage() {
   }, [sector, load]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Newspaper className="w-5 h-5 text-[#1D9E75]" />
+              <Newspaper className="w-5 h-5 text-[#0EA5E9]" />
               Market News
             </h1>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
@@ -84,7 +84,7 @@ export default function NewsPage() {
           <button
             onClick={() => load(sector)}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#1D9E75] hover:text-[#1D9E75] dark:hover:text-[#1D9E75] rounded-lg transition-colors disabled:opacity-50 shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#0EA5E9] hover:text-[#0EA5E9] dark:hover:text-[#0EA5E9] rounded-lg transition-colors disabled:opacity-50 shrink-0"
           >
             {loading
               ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -101,8 +101,8 @@ export default function NewsPage() {
               onClick={() => setSector(key)}
               className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors whitespace-nowrap ${
                 sector === key
-                  ? 'bg-[#1D9E75] text-white border-[#1D9E75]'
-                  : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#1D9E75] hover:text-[#1D9E75] dark:hover:text-[#1D9E75]'
+                  ? 'bg-[#0EA5E9] text-white border-[#0EA5E9]'
+                  : 'bg-white dark:bg-[#1E293B] border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#0EA5E9] hover:text-[#0EA5E9] dark:hover:text-[#0EA5E9]'
               }`}
             >
               {label}
@@ -127,7 +127,7 @@ export default function NewsPage() {
             Gagal memuat berita.{' '}
             <button
               onClick={() => load(sector)}
-              className="text-[#1D9E75] hover:underline"
+              className="text-[#0EA5E9] hover:underline"
             >
               Coba lagi
             </button>
@@ -144,7 +144,7 @@ export default function NewsPage() {
         {/* News list */}
         {news.length > 0 && (
           <div
-            className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden transition-opacity ${
+            className={`bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden transition-opacity ${
               loading ? 'opacity-60' : 'opacity-100'
             }`}
           >
@@ -158,11 +158,11 @@ export default function NewsPage() {
                   className="flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-[#1D9E75] transition-colors leading-snug">
+                    <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-[#0EA5E9] transition-colors leading-snug">
                       {item.title}
                     </p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[11px] font-medium text-[#1D9E75] bg-[#1D9E75]/10 px-1.5 py-0.5 rounded truncate max-w-[150px]">
+                      <span className="text-[11px] font-medium text-[#0EA5E9] bg-[#0EA5E9]/10 px-1.5 py-0.5 rounded truncate max-w-[150px]">
                         {item.source}
                       </span>
                       <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
@@ -170,7 +170,7 @@ export default function NewsPage() {
                       </span>
                     </div>
                   </div>
-                  <ExternalLink className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-[#1D9E75] shrink-0 mt-0.5 transition-colors" />
+                  <ExternalLink className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-[#0EA5E9] shrink-0 mt-0.5 transition-colors" />
                 </a>
               ))}
             </div>

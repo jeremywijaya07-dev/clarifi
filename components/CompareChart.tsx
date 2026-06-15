@@ -78,7 +78,7 @@ function CustomTooltip({
   const s1Entry = payload.find(p => p.dataKey === 's1');
   const s2Entry = payload.find(p => p.dataKey === 's2');
   return (
-    <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#1F2937] rounded-lg p-2.5 shadow-lg text-xs min-w-[170px]">
+    <div className="bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#1F2937] rounded-lg p-2.5 shadow-lg text-xs min-w-[170px]">
       <p className="text-gray-400 dark:text-gray-500 mb-1.5 font-medium">
         {label ? fmtTooltipDate(label) : ''}
       </p>
@@ -93,7 +93,7 @@ function CustomTooltip({
               <span
                 className={`font-semibold ${
                   entry.value != null && entry.value >= 0
-                    ? 'text-[#1D9E75]'
+                    ? 'text-[#10B981]'
                     : 'text-[#EF4444]'
                 }`}
               >
@@ -169,7 +169,7 @@ export default function CompareChart({ symbol1, symbol2 }: CompareChartProps) {
   const tickInterval = Math.max(1, Math.floor(chartData.length / 5));
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-[#2D3748] p-4 mb-4">
+    <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#2D3748] p-4 mb-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
@@ -183,15 +183,15 @@ export default function CompareChart({ symbol1, symbol2 }: CompareChartProps) {
               disabled={loading}
               className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors disabled:opacity-50 ${
                 period === p
-                  ? 'bg-[#1D9E75] text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-[#1D9E75]/10 hover:text-[#1D9E75] dark:hover:text-[#1D9E75]'
+                  ? 'bg-[#0EA5E9] text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-[#0EA5E9]/10 hover:text-[#0EA5E9] dark:hover:text-[#0EA5E9]'
               }`}
             >
               {p}
             </button>
           ))}
           {loading && (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1D9E75] ml-1" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#10B981] ml-1" />
           )}
         </div>
       </div>
@@ -211,7 +211,7 @@ export default function CompareChart({ symbol1, symbol2 }: CompareChartProps) {
             </span>
             {ret != null && (
               <span
-                className={`font-semibold ${ret >= 0 ? 'text-[#1D9E75]' : 'text-[#EF4444]'}`}
+                className={`font-semibold ${ret >= 0 ? 'text-[#10B981]' : 'text-[#EF4444]'}`}
               >
                 — {fmtPct(ret)}
               </span>
@@ -230,8 +230,8 @@ export default function CompareChart({ symbol1, symbol2 }: CompareChartProps) {
       {/* Chart */}
       <div className="relative w-full h-56">
         {loading && (
-          <div className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 flex items-center justify-center rounded z-10">
-            <Loader2 className="w-5 h-5 animate-spin text-[#1D9E75]" />
+          <div className="absolute inset-0 bg-white/60 dark:bg-[#1E293B]/60 flex items-center justify-center rounded z-10">
+            <Loader2 className="w-5 h-5 animate-spin text-[#10B981]" />
           </div>
         )}
         <ResponsiveContainer width="100%" height="100%">

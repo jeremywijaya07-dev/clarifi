@@ -11,13 +11,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
   body {
-    @apply bg-[#F8FAFC] text-gray-900 dark:bg-[#0A0F1E] dark:text-[#F9FAFB];
+    @apply bg-[#F0F4F8] text-gray-900 dark:bg-[#0F172A] dark:text-[#F9FAFB];
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#2D3748] shadow-sm;
+    @apply bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#2D3748] shadow-sm;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
   }
   .card-header {
     @apply flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800;
@@ -32,13 +33,13 @@
     @apply text-sm font-semibold text-gray-900 dark:text-white;
   }
   .btn-primary {
-    @apply px-4 py-2 bg-[#00A86B] hover:bg-[#009060] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50;
+    @apply px-4 py-2 bg-[#0EA5E9] hover:bg-[#0284C7] text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50;
   }
   .btn-outline {
-    @apply px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#00A86B] hover:text-[#00A86B] transition-colors;
+    @apply px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors;
   }
   .positive {
-    @apply text-[#00A86B];
+    @apply text-[#10B981];
   }
   .negative {
     @apply text-red-500;

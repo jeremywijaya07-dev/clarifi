@@ -159,7 +159,7 @@ export default function TickerAutocomplete({
         spellCheck={false}
       />
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#2D3748] rounded-xl shadow-2xl overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl shadow-2xl overflow-hidden">
           {results.map((t, i) => (
             <button
               key={t.symbol}
@@ -167,7 +167,7 @@ export default function TickerAutocomplete({
               onMouseDown={e => { e.preventDefault(); handleSelect(t); }}
               className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${
                 i === focusedIdx
-                  ? 'bg-[#00A86B]/10 dark:bg-[#00A86B]/15'
+                  ? 'bg-[#0EA5E9]/10 dark:bg-[#0EA5E9]/15'
                   : 'hover:bg-gray-50 dark:hover:bg-[#1F2937]'
               }`}
             >
@@ -181,7 +181,7 @@ export default function TickerAutocomplete({
               </div>
               <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ml-2 ${
                 t.exchange === 'IDX'
-                  ? 'bg-[#00A86B]/15 text-[#00A86B]'
+                  ? 'bg-[#0EA5E9]/15 text-[#0EA5E9]'
                   : t.exchange === 'US'
                   ? 'bg-blue-500/15 text-blue-500'
                   : 'bg-gray-500/15 text-gray-500'

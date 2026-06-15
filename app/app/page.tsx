@@ -87,7 +87,7 @@ function computeFV(stock: StockData): FVMethod[] | null {
 }
 
 const FV_CFG: Record<FVSignal, { label: string; bg: string; text: string }> = {
-  undervalued: { label: 'Undervalued', bg: 'bg-[#00A86B]/10', text: 'text-[#00A86B]' },
+  undervalued: { label: 'Undervalued', bg: 'bg-[#10B981]/15', text: 'text-[#10B981]' },
   overvalued:  { label: 'Overvalued',  bg: 'bg-red-500/10',   text: 'text-red-500'   },
   fair:        { label: 'Fair',        bg: 'bg-yellow-500/10', text: 'text-yellow-500'},
   na:          { label: 'N/A',         bg: 'bg-gray-500/10',   text: 'text-[#6B7280]' },
@@ -113,7 +113,7 @@ function FairValueCard({ stock }: { stock: StockData }) {
           <span className="card-title">Fair Value Estimate</span>
           <div className="relative group">
             <Info className="w-3.5 h-3.5 text-[#6B7280] cursor-help" />
-            <div className="absolute left-0 top-5 z-20 w-52 p-2 text-[11px] leading-relaxed bg-gray-900 dark:bg-gray-800 text-white rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div className="absolute left-0 top-5 z-20 w-52 p-2 text-[11px] leading-relaxed bg-[#1E293B] dark:bg-gray-800 text-white rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               Estimates based on fundamental data. Not financial advice.
             </div>
           </div>
@@ -135,7 +135,7 @@ function FairValueCard({ stock }: { stock: StockData }) {
                     <p className="text-sm font-bold text-gray-900 dark:text-white">
                       {formatCurrency(m.value, stock.currency)}
                     </p>
-                    <p className={`text-[10px] font-semibold ${m.upside! >= 0 ? 'text-[#00A86B]' : 'text-red-500'}`}>
+                    <p className={`text-[10px] font-semibold ${m.upside! >= 0 ? 'text-[#10B981]' : 'text-red-500'}`}>
                       {m.upside! >= 0 ? '+' : ''}{m.upside!.toFixed(1)}%
                     </p>
                   </>
@@ -168,9 +168,9 @@ function FairValueCard({ stock }: { stock: StockData }) {
 function ChangeChip({ value, label }: { value: number; label: string }) {
   const pos = value >= 0;
   return (
-    <div className={`flex flex-col items-center px-3 py-2 rounded-lg min-w-[70px] ${pos ? 'bg-[#00A86B]/10' : 'bg-red-500/10'}`}>
+    <div className={`flex flex-col items-center px-3 py-2 rounded-lg min-w-[70px] ${pos ? 'bg-[#10B981]/15' : 'bg-red-500/10'}`}>
       <span className="text-[10px] text-[#9CA3AF] font-medium">{label}</span>
-      <span className={`text-sm font-bold ${pos ? 'text-[#00A86B]' : 'text-red-500'}`}>
+      <span className={`text-sm font-bold ${pos ? 'text-[#10B981]' : 'text-red-500'}`}>
         {formatPercent(value)}
       </span>
     </div>
@@ -347,12 +347,12 @@ function StockAnalysis() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
         {/* Search — own card */}
         <div className="max-w-[680px] mx-auto mb-4">
-          <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
+          <div className="bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
             <form onSubmit={handleSubmit} className="flex gap-2">
               <TickerAutocomplete
                 value={query}
@@ -360,7 +360,7 @@ function StockAnalysis() {
                 onSelect={sym => { setQuery(sym); fetchStock(sym); }}
                 placeholder="Search ticker... (e.g. AAPL, BBRI, PTRO, NVDA)"
                 showIcon
-                inputClassName="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent border border-gray-200 dark:border-[#1F2937] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00A86B]/30 focus:border-[#00A86B] dark:text-[#F9FAFB] placeholder:text-[#6B7280]"
+                inputClassName="w-full pl-9 pr-3 py-2.5 text-sm bg-transparent border border-gray-200 dark:border-[#1F2937] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]/30 focus:border-[#0EA5E9] dark:text-[#F9FAFB] placeholder:text-[#6B7280]"
               />
               <button type="submit" disabled={loading} className="btn-primary shrink-0">
                 {loading ? '…' : 'Search'}
@@ -373,9 +373,9 @@ function StockAnalysis() {
         </div>
 
         {/* Quick Picks — separate card */}
-        <div className="mb-5 bg-white dark:bg-[#111827] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
+        <div className="mb-5 bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
           <div className="flex items-center gap-1.5 mb-2.5">
-            <Zap className="w-3 h-3 text-[#00A86B]" />
+            <Zap className="w-3 h-3 text-[#0EA5E9]" />
             <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
               Quick Picks
             </span>
@@ -387,8 +387,8 @@ function StockAnalysis() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-[#00A86B] text-white'
-                    : 'bg-gray-50 dark:bg-[#0A0F1E] border border-gray-200 dark:border-[#1F2937] text-gray-500 dark:text-[#9CA3AF] hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B]'
+                    ? 'bg-[#0EA5E9] text-white'
+                    : 'bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-[#1F2937] text-gray-500 dark:text-[#9CA3AF] hover:bg-[#0EA5E9]/10 dark:hover:bg-[#0EA5E9]/20 hover:border-[#0EA5E9] hover:text-[#0EA5E9]'
                 }`}
               >
                 {tab.label}
@@ -400,7 +400,7 @@ function StockAnalysis() {
               <button
                 key={s}
                 onClick={() => fetchStock(s)}
-                className="px-2.5 py-1 text-xs font-medium bg-gray-50 dark:bg-[#0A0F1E] border border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] rounded-md hover:bg-[#00A86B]/10 dark:hover:bg-[#00A86B]/20 hover:border-[#00A86B] hover:text-[#00A86B] transition-colors"
+                className="px-2.5 py-1 text-xs font-medium bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] rounded-md hover:bg-[#0EA5E9]/10 dark:hover:bg-[#0EA5E9]/20 hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
               >
                 {s.replace(':IDX', '')}
               </button>
@@ -441,11 +441,11 @@ function StockAnalysis() {
                         {formatCurrency(stock.price, stock.currency)}
                       </h1>
                       <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
-                        stock.changePercent >= 0 ? 'bg-[#00A86B]/10 text-[#00A86B]' : 'bg-red-500/10 text-red-500'
+                        stock.changePercent >= 0 ? 'bg-[#10B981]/15 text-[#10B981]' : 'bg-red-500/10 text-red-500'
                       }`}>
                         {formatPercent(stock.changePercent)}
                       </span>
-                      {trend === 'bullish' && <TrendingUp className="w-4 h-4 text-[#00A86B]" />}
+                      {trend === 'bullish' && <TrendingUp className="w-4 h-4 text-[#10B981]" />}
                       {trend === 'bearish' && <TrendingDown className="w-4 h-4 text-red-500" />}
                       {trend === 'neutral' && <Minus className="w-4 h-4 text-[#6B7280]" />}
                     </div>
@@ -454,7 +454,7 @@ function StockAnalysis() {
                       <span className="text-sm text-[#9CA3AF] truncate max-w-[220px]">{stock.name}</span>
                       <span className={`text-[11px] px-1.5 py-0.5 rounded font-semibold ${
                         stock.currency === 'IDR' || stock.exchange?.toLowerCase().includes('indonesia') || stock.exchange?.toUpperCase() === 'IDX'
-                          ? 'bg-[#00A86B]/15 text-[#00A86B]'
+                          ? 'bg-[#0EA5E9]/15 text-[#0EA5E9]'
                           : stock.exchange?.toUpperCase().includes('NASDAQ')
                           ? 'bg-blue-500/15 text-blue-500'
                           : stock.exchange?.toUpperCase().includes('NYSE')
@@ -465,7 +465,7 @@ function StockAnalysis() {
                       </span>
                       {trend && (
                         <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
-                          trend === 'bullish' ? 'bg-[#00A86B]/10 text-[#00A86B]'
+                          trend === 'bullish' ? 'bg-[#10B981]/15 text-[#10B981]'
                           : trend === 'bearish' ? 'bg-red-500/10 text-red-500'
                           : 'bg-gray-100 dark:bg-gray-800 text-[#9CA3AF]'
                         }`}>
@@ -478,7 +478,7 @@ function StockAnalysis() {
                     <button
                       onClick={handleSetAlert}
                       title="Set price alert"
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors bg-white dark:bg-[#111827] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors bg-white dark:bg-[#1E293B] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#0EA5E9] hover:text-[#0EA5E9]"
                     >
                       <Bell className="w-3.5 h-3.5" />
                       Alert
@@ -487,8 +487,8 @@ function StockAnalysis() {
                       onClick={toggleWatch}
                       className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
                         isWatching
-                          ? 'bg-[#00A86B]/10 border-[#00A86B] text-[#00A86B]'
-                          : 'bg-white dark:bg-[#111827] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#00A86B] hover:text-[#00A86B]'
+                          ? 'bg-[#0EA5E9]/10 border-[#0EA5E9] text-[#0EA5E9]'
+                          : 'bg-white dark:bg-[#1E293B] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#0EA5E9] hover:text-[#0EA5E9]'
                       }`}
                     >
                       {isWatching ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
@@ -572,7 +572,7 @@ function StockAnalysis() {
                     label="RSI (14)"
                     value={stock.rsi14}
                     sub={rsiSignal === 'overbought' ? 'Overbought' : rsiSignal === 'oversold' ? 'Oversold' : 'Neutral zone'}
-                    subColor={rsiSignal === 'overbought' ? 'text-red-500' : rsiSignal === 'oversold' ? 'text-[#00A86B]' : 'text-[#6B7280]'}
+                    subColor={rsiSignal === 'overbought' ? 'text-red-500' : rsiSignal === 'oversold' ? 'text-[#10B981]' : 'text-[#6B7280]'}
                   />
                   <MetricBox
                     label="Rel. Volume"
@@ -583,13 +583,13 @@ function StockAnalysis() {
                     label="SMA 20"
                     value={formatCurrency(stock.sma20, stock.currency)}
                     sub={stock.price >= stock.sma20 ? '▲ Above' : '▼ Below'}
-                    subColor={stock.price >= stock.sma20 ? 'text-[#00A86B]' : 'text-red-500'}
+                    subColor={stock.price >= stock.sma20 ? 'text-[#10B981]' : 'text-red-500'}
                   />
                   <MetricBox
                     label="SMA 50"
                     value={formatCurrency(stock.sma50, stock.currency)}
                     sub={stock.price >= stock.sma50 ? '▲ Above' : '▼ Below'}
-                    subColor={stock.price >= stock.sma50 ? 'text-[#00A86B]' : 'text-red-500'}
+                    subColor={stock.price >= stock.sma50 ? 'text-[#10B981]' : 'text-red-500'}
                   />
                 </div>
               </div>
@@ -668,7 +668,7 @@ function StockAnalysis() {
       {alertModal && stock && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAlertModal(false)} />
-          <div className="relative bg-white dark:bg-[#111827] rounded-2xl border border-gray-200 dark:border-[#2D3748] shadow-2xl p-5 w-full max-w-sm z-10">
+          <div className="relative bg-white dark:bg-[#1E293B] rounded-2xl border border-gray-200 dark:border-[#2D3748] shadow-2xl p-5 w-full max-w-sm z-10">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-gray-900 dark:text-white">Set Price Alert</h3>
               <button onClick={() => setAlertModal(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
@@ -717,7 +717,7 @@ function StockAnalysis() {
               min="0"
               step="any"
               autoFocus
-              className="w-full px-3 py-2.5 mb-4 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#00A86B] transition-colors"
+              className="w-full px-3 py-2.5 mb-4 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#0EA5E9] transition-colors"
             />
 
             {/* Notification blocked warning */}
@@ -735,7 +735,7 @@ function StockAnalysis() {
             ) : (
               <button
                 onClick={saveAlert}
-                className="w-full py-2.5 bg-[#00A86B] hover:bg-[#009060] text-white text-sm font-semibold rounded-lg transition-colors"
+                className="w-full py-2.5 bg-[#0EA5E9] hover:bg-[#0284C7] text-white text-sm font-semibold rounded-lg transition-colors"
               >
                 Set Alert
               </button>

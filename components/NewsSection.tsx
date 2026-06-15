@@ -38,7 +38,7 @@ export default function NewsSection({ symbol, name }: Props) {
     <div className="card overflow-hidden">
       <div className="card-header">
         <div className="flex items-center gap-2">
-          <Newspaper className="w-4 h-4 text-[#00A86B]" />
+          <Newspaper className="w-4 h-4 text-[#0EA5E9]" />
           <span className="card-title">Latest News</span>
         </div>
         <button
@@ -66,7 +66,7 @@ export default function NewsSection({ symbol, name }: Props) {
       {!loading && error && (
         <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
           Failed to load news.{' '}
-          <button onClick={load} className="text-[#00A86B] hover:underline">Retry</button>
+          <button onClick={load} className="text-[#0EA5E9] hover:underline">Retry</button>
         </div>
       )}
 
@@ -87,11 +87,11 @@ export default function NewsSection({ symbol, name }: Props) {
               className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-[#00A86B] transition-colors leading-snug">
+                <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-[#0EA5E9] transition-colors leading-snug">
                   {item.title}
                 </p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[11px] font-medium text-[#00A86B] bg-[#00A86B]/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+                  <span className="text-[11px] font-medium text-[#0EA5E9] bg-[#0EA5E9]/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
                     {item.source}
                   </span>
                   <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
@@ -99,7 +99,7 @@ export default function NewsSection({ symbol, name }: Props) {
                   </span>
                 </div>
               </div>
-              <ExternalLink className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-[#00A86B] shrink-0 mt-0.5 transition-colors" />
+              <ExternalLink className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 group-hover:text-[#0EA5E9] shrink-0 mt-0.5 transition-colors" />
             </a>
           ))}
         </div>

@@ -67,7 +67,7 @@ export default function WatchlistPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+      <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Watchlist</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
@@ -78,7 +78,7 @@ export default function WatchlistPage() {
             <p className="text-gray-500 dark:text-gray-400 text-sm">Your watchlist is empty</p>
             <Link
               href="/app"
-              className="text-[#1D9E75] hover:underline text-sm font-medium"
+              className="text-[#0EA5E9] hover:underline text-sm font-medium"
             >
               Search for stocks to add
             </Link>
@@ -89,7 +89,7 @@ export default function WatchlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0A0F1E]">
+    <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -100,7 +100,7 @@ export default function WatchlistPage() {
           </div>
           <button
             onClick={refreshAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Refresh All
@@ -122,7 +122,7 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 animate-pulse">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 animate-pulse">
         <div className="flex items-center justify-between">
           <div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mb-1.5" />
@@ -136,7 +136,7 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
 
   if (error || !data) {
     return (
-      <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
+      <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-semibold text-gray-900 dark:text-white">{symbol}</p>
@@ -158,11 +158,11 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
   const aboveSMA20 = data.sma20 > 0 && data.price >= data.sma20;
 
   return (
-    <div className="bg-white dark:bg-[#111827] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
+    <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
       <div className="flex items-center justify-between gap-3">
         <Link href={`/app?symbol=${encodeURIComponent(data.symbol)}`} className="flex-1 min-w-0 group">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-            <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#1D9E75] transition-colors">
+            <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#0EA5E9] transition-colors">
               {data.symbol}
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[180px]">
@@ -219,7 +219,7 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
           </div>
           <Link
             href={`/app?symbol=${encodeURIComponent(data.symbol)}`}
-            className="p-1.5 text-gray-400 hover:text-[#1D9E75] transition-colors"
+            className="p-1.5 text-gray-400 hover:text-[#0EA5E9] transition-colors"
             title="View analysis"
           >
             <ExternalLink className="w-4 h-4" />
