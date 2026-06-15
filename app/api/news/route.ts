@@ -7,6 +7,18 @@ const HEADERS = {
   'Accept': 'application/rss+xml, application/xml, text/xml, */*',
 };
 
+const SECTOR_QUERIES: Record<string, { en: string; id: string }> = {
+  all:      { en: 'IHSG Indonesia stock market today',                         id: 'IHSG saham Indonesia hari ini bursa efek' },
+  banking:  { en: 'Indonesia bank stocks BCA BRI Mandiri BBNI finance',        id: 'saham perbankan Indonesia BCA BRI Mandiri BBNI' },
+  tech:     { en: 'Indonesia technology digital stocks GOTO DCII BUKA',        id: 'saham teknologi digital Indonesia GOTO DCII Bukalapak' },
+  energy:   { en: 'Indonesia mining coal energy ADRO ITMG PTBA ANTM nickel',   id: 'saham tambang energi batubara Indonesia ADRO ITMG PTBA nikel' },
+  consumer: { en: 'Indonesia consumer goods retail UNVR MYOR ICBP INDF',       id: 'saham consumer retail Indonesia UNVR Mayora Indofood ICBP' },
+  property: { en: 'Indonesia property real estate BSDE SMRA CTRA PWON',        id: 'saham properti Indonesia BSDE Summarecon Ciputra PWON' },
+  health:   { en: 'Indonesia healthcare hospital MIKA KLBF HEAL Kalbe',        id: 'saham kesehatan rumah sakit Indonesia Kalbe Mika HEAL' },
+  telecom:  { en: 'Indonesia telecom TLKM EXCL ISAT telecommunications',       id: 'saham telekomunikasi Indonesia Telkom XL Indosat ISAT' },
+  industry: { en: 'Indonesia industrial manufacturing ASII SMGR INTP Astra',   id: 'saham industri manufaktur Indonesia Astra Semen SMGR INTP' },
+};
+
 function isIDX(symbol: string) {
   return symbol.toUpperCase().endsWith(':IDX');
 }
@@ -57,9 +69,43 @@ async function fetchRSS(query: string, lang: string, country: string): Promise<N
 
 export async function GET(request: NextRequest) {
   const symbol = request.nextUrl.searchParams.get('symbol') ?? '';
-  const name = request.nextUrl.searchParams.get('name') ?? symbol.replace(/:IDX$/i, '');
+  const sector = request.nextUrl.searchParams.get('sector') ?? '';
 
-  // Use first 2-3 words of company name for better search results
+  // ── Sector news mode ────────────────────────────────────────────────────────
+  if (sector && !symbol) {
+    const queries = SECTOR_QUERIES[sector];
+    if (!queries) return NextResponse.json({ news: [] });
+
+    try {
+      const [enItems, idItems] = await Promise.all([
+        fetchRSS(queries.en, 'en', 'US'),
+        fetchRSS(queries.id, 'id', 'ID'),
+      ]);
+
+      const seen = new Set<string>();
+      const news: NewsItem[] = [...enItems, ...idItems]
+        .filter(item => {
+          const key = item.title.slice(0, 50);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .sort((a, b) => {
+          const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+          const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+          return tb - ta;
+        })
+        .slice(0, 15);
+
+      return NextResponse.json({ news });
+    } catch (err) {
+      console.error('Sector news error:', err);
+      return NextResponse.json({ news: [] });
+    }
+  }
+
+  // ── Per-stock news mode (existing) ──────────────────────────────────────────
+  const name = request.nextUrl.searchParams.get('name') ?? symbol.replace(/:IDX$/i, '');
   const shortName = name.split(' ').slice(0, 3).join(' ');
 
   try {
