@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info, Zap,
-  Maximize2, X, Bell,
+  Maximize2, X, Bell, Share2,
 } from 'lucide-react';
 import TradingViewChart from '@/components/TradingViewChart';
 import AIAnalysis from '@/components/AIAnalysis';
@@ -253,6 +253,7 @@ function StockAnalysis() {
   const [alertCondition, setAlertCondition] = useState<'above' | 'below'>('above');
   const [alertTarget, setAlertTarget] = useState('');
   const [alertSaved, setAlertSaved] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchParams = useSearchParams();
@@ -335,6 +336,23 @@ function StockAnalysis() {
     setAlertCondition('above');
     setAlertSaved(false);
     setAlertModal(true);
+  };
+
+  const handleShare = async () => {
+    if (!stock) return;
+    const url = `https://clarifi-gray.vercel.app/analysis/${stock.symbol}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2500);
   };
 
   const saveAlert = () => {
@@ -503,6 +521,14 @@ function StockAnalysis() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={handleShare}
+                      title="Share analysis"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors bg-white dark:bg-[#1E293B] border-gray-200 dark:border-[#1F2937] text-gray-600 dark:text-[#9CA3AF] hover:border-[#0EA5E9] hover:text-[#0EA5E9]"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      Share
+                    </button>
                     <button
                       onClick={handleSetAlert}
                       title="Set price alert"
@@ -683,6 +709,13 @@ function StockAnalysis() {
           </div>
         )}
       </div>
+
+      {/* Share toast */}
+      {shareCopied && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 bg-[#0EA5E9] text-white text-sm font-semibold rounded-full shadow-lg animate-fade-in">
+          Link disalin! 🔗
+        </div>
+      )}
 
       {/* Price Alert modal */}
       {alertModal && stock && (

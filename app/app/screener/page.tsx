@@ -47,19 +47,28 @@ const BATCH_SIZE = 10;
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Filters {
-  rsi:    'oversold' | 'neutral' | 'overbought' | null;
-  sma20:  'above' | 'below' | null;
-  sma50:  'above' | 'below' | null;
-  perf1M: 'up' | 'flat' | 'down' | null;
-  perf3M: 'up' | 'down' | null;
-  vol:    'high' | 'low' | null;
+  rsi:       'oversold' | 'neutral' | 'overbought' | null;
+  sma20:     'above' | 'below' | null;
+  sma50:     'above' | 'below' | null;
+  perf1M:    'up' | 'flat' | 'down' | null;
+  perf3M:    'up' | 'down' | null;
+  vol:       'high' | 'low' | null;
+  sentiment: 'bullish' | 'bearish' | 'neutral' | null;
 }
 
 type SortKey = 'symbol' | 'price' | 'changePercent' | 'change1M' | 'change3M' | 'rsi14' | 'relativeVolume';
 
 const EMPTY_FILTERS: Filters = {
-  rsi: null, sma20: null, sma50: null, perf1M: null, perf3M: null, vol: null,
+  rsi: null, sma20: null, sma50: null, perf1M: null, perf3M: null, vol: null, sentiment: null,
 };
+
+// ── Sentiment logic (client-side, no extra API call) ─────────────────────────
+
+function getSentiment(s: StockData): 'bullish' | 'bearish' | 'neutral' {
+  if (s.rsi14 >= 40 && s.rsi14 <= 70 && s.price >= s.sma20 && s.change1M > 0) return 'bullish';
+  if (s.rsi14 < 45  && s.price < s.sma50 && s.change1M < 0)                   return 'bearish';
+  return 'neutral';
+}
 
 // ── Filter logic ──────────────────────────────────────────────────────────────
 
@@ -78,6 +87,7 @@ function passesFilters(s: StockData, f: Filters): boolean {
   if (f.perf3M === 'down'    && s.change3M >= -10) return false;
   if (f.vol === 'high'       && s.relativeVolume <= 1.5) return false;
   if (f.vol === 'low'        && s.relativeVolume >= 0.5) return false;
+  if (f.sentiment            && getSentiment(s) !== f.sentiment) return false;
   return true;
 }
 
@@ -274,6 +284,16 @@ export default function ScreenerPage() {
                 <FilterChip label="Rendah < 0.5x" active={filters.vol === 'low'}  onClick={() => toggle('vol', 'low')}  color="green" />
               </div>
             </div>
+
+            {/* Sentimen AI */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 w-24 shrink-0">Sentimen AI</span>
+              <div className="flex gap-1.5 flex-wrap">
+                <FilterChip label="🟢 Bullish"  active={filters.sentiment === 'bullish'} onClick={() => toggle('sentiment', 'bullish')} color="green" />
+                <FilterChip label="🔴 Bearish"  active={filters.sentiment === 'bearish'} onClick={() => toggle('sentiment', 'bearish')} color="red"   />
+                <FilterChip label="🟡 Neutral"  active={filters.sentiment === 'neutral'} onClick={() => toggle('sentiment', 'neutral')} color="amber" />
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
@@ -366,6 +386,9 @@ export default function ScreenerPage() {
                         <th className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                           <SortHeader label="Rel. Vol" sortKey="relativeVolume" current={sortKey} dir={sortDir} onSort={handleSort} />
                         </th>
+                        <th className="px-3 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                          Sentimen
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -428,6 +451,26 @@ export default function ScreenerPage() {
                             </td>
                             <td className="px-3 py-2.5 text-right text-[13px] text-gray-600 dark:text-gray-400 whitespace-nowrap">
                               {s.relativeVolume > 0 ? `${s.relativeVolume.toFixed(2)}x` : '—'}
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              {(() => {
+                                const sent = getSentiment(s);
+                                if (sent === 'bullish') return (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#10B981]/10 text-[#10B981]">
+                                    🟢 Bullish
+                                  </span>
+                                );
+                                if (sent === 'bearish') return (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#EF4444]/10 text-[#EF4444]">
+                                    🔴 Bearish
+                                  </span>
+                                );
+                                return (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500">
+                                    🟡 Neutral
+                                  </span>
+                                );
+                              })()}
                             </td>
                           </Link>
                         );

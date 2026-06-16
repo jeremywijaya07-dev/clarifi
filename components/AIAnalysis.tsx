@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, RefreshCw, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { StockData, AIAnalysis as AIAnalysisType } from '@/lib/types';
 import { useLanguage } from '@/lib/useLanguage';
@@ -46,7 +46,7 @@ function getSectionBadges(key: typeof SECTION_KEYS[number], stock: StockData): s
   }
 }
 
-interface Props { stockData: StockData; }
+interface Props { stockData: StockData; autoRun?: boolean; }
 
 const BULLISH_WORDS = [
   'bullish', 'positive', 'upside', 'outperform', 'strong momentum', 'uptrend',
@@ -101,8 +101,8 @@ const T = {
     empty: (sym: string) => <>Klik <strong>Analisis</strong> untuk insight teknikal AI pada <span className="font-semibold text-gray-600 dark:text-gray-400">{sym}</span></>,
     sections: {
       trend:               'Tren & Momentum',
-      supportResistance:   'Support & Resistance',
-      rsiMaInterpretation: 'RSI & Moving Average',
+      supportResistance:   'RSI & Moving Average',
+      rsiMaInterpretation: 'Support & Resistance',
       keyRisk:             'Risiko Utama',
     },
     badge: { bullish: 'Layak Dipertimbangkan', bearish: 'Hati-hati', neutral: 'Netral' },
@@ -115,12 +115,17 @@ const SECTION_KEYS = [
   'trend', 'supportResistance', 'rsiMaInterpretation', 'keyRisk',
 ] as const;
 
-export default function AIAnalysis({ stockData }: Props) {
+export default function AIAnalysis({ stockData, autoRun }: Props) {
   const [analysis, setAnalysis] = useState<AIAnalysisType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [lang, setLang] = useLanguage();
+
+  useEffect(() => {
+    if (autoRun) run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const t = T[lang];
 
