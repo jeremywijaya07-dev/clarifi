@@ -210,6 +210,16 @@ interface Row {
   rawNum2?: number | null;
 }
 
+function getSentiment(s: StockData): 'bullish' | 'bearish' | 'neutral' {
+  if (s.rsi14 >= 40 && s.rsi14 <= 70 && s.price >= s.sma20 && s.change1M > 0) return 'bullish';
+  if (s.rsi14 < 45  && s.price < s.sma50 && s.change1M < 0)                   return 'bearish';
+  return 'neutral';
+}
+
+const SENTIMENT_RANK:  Record<'bullish' | 'bearish' | 'neutral', number>        = { bullish: 2, neutral: 1, bearish: 0 };
+const SENTIMENT_LABEL: Record<'bullish' | 'bearish' | 'neutral', string>        = { bullish: '🟢 Bullish', bearish: '🔴 Bearish', neutral: '🟡 Neutral' };
+const SENTIMENT_RAW:   Record<'bullish' | 'bearish' | 'neutral', number | null> = { bullish: 1, bearish: -1, neutral: null };
+
 function buildRows(s1: StockData, s2: StockData): Row[] {
   return [
     {
@@ -318,6 +328,22 @@ function buildRows(s1: StockData, s2: StockData): Row[] {
         const a = s1.price >= s1.sma50 ? 1 : 0;
         const b = s2.price >= s2.sma50 ? 1 : 0;
         return a > b ? 1 : b > a ? 2 : 0;
+      })(),
+    },
+    {
+      label: 'Sentimen AI',
+      ...(() => {
+        const sent1 = getSentiment(s1);
+        const sent2 = getSentiment(s2);
+        const r1 = SENTIMENT_RANK[sent1];
+        const r2 = SENTIMENT_RANK[sent2];
+        return {
+          v1:      SENTIMENT_LABEL[sent1],
+          v2:      SENTIMENT_LABEL[sent2],
+          winner:  (r1 > r2 ? 1 : r2 > r1 ? 2 : 0) as 1 | 2 | 0,
+          rawNum1: SENTIMENT_RAW[sent1],
+          rawNum2: SENTIMENT_RAW[sent2],
+        };
       })(),
     },
   ];
