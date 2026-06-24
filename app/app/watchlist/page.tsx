@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Trash2, RefreshCw, BookmarkCheck, ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Trash2, RefreshCw, BookmarkCheck, ExternalLink, TrendingUp, TrendingDown, Minus, LogIn } from 'lucide-react';
 import { StockData, PricePoint } from '@/lib/types';
 import { formatCurrency, formatPercent, getTrendSignal, getRSISignal } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 function Sparkline({ history }: { history: PricePoint[] }) {
   const pts = history.slice(-20);
@@ -33,9 +35,30 @@ interface WatchItem {
   error: boolean;
 }
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function getLocalSymbols(): string[] {
+  try {
+    const raw = localStorage.getItem('watchlist');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function clearLocalSymbols() {
+  localStorage.removeItem('watchlist');
+}
+
+function market(symbol: string): string {
+  return symbol.includes(':') || symbol.length <= 4 ? 'IDX' : 'US';
+}
+
+// ── component ─────────────────────────────────────────────────────────────────
+
 export default function WatchlistPage() {
   const [items, setItems] = useState<WatchItem[]>([]);
   const [initialized, setInitialized] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
 
   const loadSymbols = useCallback((symbols: string[]) => {
     const initial: WatchItem[] = symbols.map(s => ({
@@ -66,16 +89,72 @@ export default function WatchlistPage() {
     });
   }, []);
 
-  useEffect(() => {
-    const raw = localStorage.getItem('watchlist');
-    const symbols: string[] = raw ? JSON.parse(raw) : [];
-    setInitialized(true);
+  // Migrate localStorage watchlist to Supabase on first login
+  const migrateIfNeeded = useCallback(async (uid: string) => {
+    const local = getLocalSymbols();
+    if (!local.length) return;
+    const rows = local.map(sym => ({ user_id: uid, ticker: sym, market: market(sym) }));
+    await supabase.from('watchlist').upsert(rows, { onConflict: 'user_id,ticker' });
+    clearLocalSymbols();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load from Supabase (when logged in)
+  const loadFromDB = useCallback(async (uid: string) => {
+    const { data } = await supabase
+      .from('watchlist')
+      .select('ticker')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: true });
+    const symbols = (data ?? []).map((r: { ticker: string }) => r.ticker);
     if (symbols.length) loadSymbols(symbols);
+    else setItems([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadSymbols]);
 
-  const remove = (sym: string) => {
-    const next = items.filter(i => i.symbol !== sym).map(i => i.symbol);
-    localStorage.setItem('watchlist', JSON.stringify(next));
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data.user ?? null;
+      setUser(u);
+      if (u) {
+        await migrateIfNeeded(u.id);
+        await loadFromDB(u.id);
+      } else {
+        const symbols = getLocalSymbols();
+        if (symbols.length) loadSymbols(symbols);
+        else setItems([]);
+      }
+      setInitialized(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        await migrateIfNeeded(u.id);
+        await loadFromDB(u.id);
+      } else {
+        const symbols = getLocalSymbols();
+        if (symbols.length) loadSymbols(symbols);
+        else setItems([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const remove = async (sym: string) => {
+    if (user) {
+      await supabase
+        .from('watchlist')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('ticker', sym);
+    } else {
+      const next = items.filter(i => i.symbol !== sym).map(i => i.symbol);
+      localStorage.setItem('watchlist', JSON.stringify(next));
+    }
     setItems(prev => prev.filter(i => i.symbol !== sym));
   };
 
@@ -86,53 +165,53 @@ export default function WatchlistPage() {
 
   if (!initialized) return null;
 
-  if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Watchlist</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">
-            Your saved stocks appear here.
-          </p>
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <BookmarkCheck className="w-10 h-10 text-gray-200 dark:text-gray-800" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Your watchlist is empty</p>
-            <Link
-              href="/app"
-              className="text-[#0EA5E9] hover:underline text-sm font-medium"
-            >
-              Search for stocks to add
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#F0F4F8] dark:bg-[#0F172A]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Watchlist</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {items.length} stock{items.length !== 1 ? 's' : ''}
+              {user && <span className="text-[#0EA5E9] ml-1">· tersinkron</span>}
             </p>
           </div>
-          <button
-            onClick={refreshAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Refresh All
-          </button>
+          {items.length > 0 && (
+            <button
+              onClick={refreshAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-lg hover:border-[#0EA5E9] hover:text-[#0EA5E9] transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Refresh All
+            </button>
+          )}
         </div>
 
-        <div className="space-y-2">
-          {items.map(item => (
-            <WatchCard key={item.symbol} item={item} onRemove={() => remove(item.symbol)} />
-          ))}
-        </div>
+        {/* CTA when logged out */}
+        {!user && (
+          <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-[#0EA5E9]/5 border border-[#0EA5E9]/20 rounded-xl">
+            <LogIn className="w-4 h-4 text-[#0EA5E9] shrink-0" />
+            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1">
+              Masuk untuk menyimpan &amp; sinkron watchlist lintas perangkat.
+            </p>
+          </div>
+        )}
+
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+            <BookmarkCheck className="w-10 h-10 text-gray-200 dark:text-gray-800" />
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Watchlist kamu kosong</p>
+            <Link href="/app" className="text-[#0EA5E9] hover:underline text-sm font-medium">
+              Cari saham untuk ditambahkan
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {items.map(item => (
+              <WatchCard key={item.symbol} item={item} onRemove={() => remove(item.symbol)} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -163,10 +242,7 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
             <p className="font-semibold text-gray-900 dark:text-white">{symbol}</p>
             <p className="text-xs text-red-500 dark:text-red-400">Failed to load</p>
           </div>
-          <button
-            onClick={onRemove}
-            className="p-1.5 text-gray-400 hover:text-[#E24B4A] transition-colors"
-          >
+          <button onClick={onRemove} className="p-1.5 text-gray-400 hover:text-[#E24B4A] transition-colors">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -197,18 +273,10 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: () => void }
             <span className="font-semibold text-gray-900 dark:text-white">
               {formatCurrency(data.price, data.currency)}
             </span>
-            <span
-              className={`text-sm font-semibold ${
-                data.changePercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#E24B4A]'
-              }`}
-            >
+            <span className={`text-sm font-semibold ${data.changePercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#E24B4A]'}`}>
               {formatPercent(data.changePercent)} today
             </span>
-            <span
-              className={`text-xs ${
-                data.change1M >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-[#E24B4A]'
-              }`}
-            >
+            <span className={`text-xs ${data.change1M >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-[#E24B4A]'}`}>
               {formatPercent(data.change1M)} 1M
             </span>
             {trend === 'bullish' && <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}

@@ -271,7 +271,7 @@ export default function LandingPage() {
               <FadeIn delay={200}>
                 <p className="text-lg text-[#9CA3AF] leading-relaxed mb-8 max-w-lg">
                   Professional stock analysis for US and Indonesian markets. Get AI insights,
-                  fair value estimates, and real-time data in seconds.
+                  fair value estimates, and near real-time market data in seconds.
                 </p>
               </FadeIn>
 
@@ -348,8 +348,8 @@ export default function LandingPage() {
               },
               {
                 icon: '📰',
-                title: 'Real-time News',
-                desc: 'Latest news for every stock from global and Indonesian sources, updated automatically.',
+                title: 'Latest News',
+                desc: 'Latest news for every stock from global and Indonesian sources, fetched on demand.',
               },
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 80}>
@@ -419,69 +419,70 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
+      {/* ── Stats / highlights ── */}
       <section className="py-24 px-4 sm:px-6 bg-[#1E293B]/50">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <FadeIn>
             <div className="text-center mb-14">
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Trusted by traders across Indonesia and the US
+                Apa yang ada di dalam Clarifi?
               </h2>
+              <p className="text-[#9CA3AF] text-lg">
+                Semua yang kamu butuhkan untuk riset saham — gratis, tanpa daftar.
+              </p>
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               {
-                quote:
-                  'Finally a tool that covers both IDX and US stocks in one place! The interface is clean and fast.',
-                name: 'Andi R.',
-                title: 'Jakarta trader',
-                initials: 'AR',
+                icon: '📐',
+                title: 'RSI, SMA20 & SMA50',
+                desc: 'Dihitung langsung dari data harga historis — bukan dari teks AI. Angka yang kamu lihat adalah angka nyata.',
               },
               {
-                quote:
-                  'The AI analysis saves me hours of research every week. Game changer for my portfolio decisions.',
-                name: 'Sarah M.',
-                title: 'Surabaya investor',
-                initials: 'SM',
+                icon: '🎯',
+                title: 'Estimasi Fair Value',
+                desc: 'Graham Number, P/E sektoral, dan PEG Value — tiga metode valuasi berbasis fundamental, dengan konsensus otomatis.',
               },
               {
-                quote:
-                  'Fair value estimates help me make smarter buy/sell decisions. I use Clarifi every morning.',
-                name: 'Budi S.',
-                title: 'Bandung',
-                initials: 'BS',
+                icon: '🌏',
+                title: '1000+ saham US & IDX',
+                desc: 'Ketik AAPL, NVDA, BBRI, atau PTRO — sistem otomatis deteksi pasar tanpa suffix tambahan.',
               },
-            ].map((t, i) => (
-              <FadeIn key={t.name} delay={i * 100}>
-                <div className="bg-[#1E293B] border border-[#1F2937] rounded-2xl p-6 h-full flex flex-col">
-                  {/* Stars */}
-                  <div className="flex gap-0.5 mb-4">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <svg key={j} className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-
-                  <p className="text-sm text-[#9CA3AF] leading-relaxed flex-1 mb-5">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#0EA5E9]/20 text-[#0EA5E9] text-xs font-bold flex items-center justify-center shrink-0">
-                      {t.initials}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">{t.name}</p>
-                      <p className="text-xs text-[#9CA3AF]">{t.title}</p>
-                    </div>
-                  </div>
+              {
+                icon: '🤖',
+                title: 'AI grounded pada data',
+                desc: 'Setiap klaim analisis AI wajib menyebut angka dari data nyata. Model tidak boleh mengarang level harga.',
+              },
+              {
+                icon: '📊',
+                title: 'Chart TradingView',
+                desc: 'Candlestick interaktif lengkap dengan volume, drawing tools, dan mode fullscreen.',
+              },
+              {
+                icon: '🔔',
+                title: 'Price Alerts',
+                desc: 'Set notifikasi harga dan Clarifi akan memberitahu saat target tercapai — tersimpan di browser, tanpa akun.',
+              },
+            ].map((f, i) => (
+              <FadeIn key={f.title} delay={i * 70}>
+                <div className="bg-[#1E293B] border border-[#1F2937] rounded-2xl p-6 h-full hover:border-[#0EA5E9]/30 transition-colors group">
+                  <div className="text-2xl mb-3">{f.icon}</div>
+                  <h3 className="text-sm font-bold text-white mb-2 group-hover:text-[#0EA5E9] transition-colors">
+                    {f.title}
+                  </h3>
+                  <p className="text-sm text-[#9CA3AF] leading-relaxed">{f.desc}</p>
                 </div>
               </FadeIn>
             ))}
           </div>
+
+          <FadeIn delay={200}>
+            <p className="text-center text-[11px] text-[#6B7280] mt-10">
+              Bukan nasihat investasi · Data ~15 menit tertunda · Selalu lakukan riset mandiri
+            </p>
+          </FadeIn>
         </div>
       </section>
 
@@ -544,8 +545,13 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-[#1F2937] text-center text-xs text-[#6B7280]">
-            © 2025 Clarifi. Data by Yahoo Finance &amp; Twelve Data.
+          <div className="mt-6 pt-6 border-t border-[#1F2937] text-center space-y-1.5">
+            <p className="text-xs text-[#6B7280]">
+              © 2025 Clarifi. Data by Yahoo Finance &amp; Twelve Data (~15 min delay). AI by Groq.
+            </p>
+            <p className="text-[10px] text-[#4B5563]">
+              Bukan nasihat investasi / Not financial advice — untuk tujuan edukasi saja. Lakukan riset mandiri sebelum berinvestasi.
+            </p>
           </div>
         </div>
       </footer>

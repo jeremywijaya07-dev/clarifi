@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Sparkles, RefreshCw, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, RefreshCw, Loader2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Shield, BarChart2, Activity } from 'lucide-react';
 import { StockData, AIAnalysis as AIAnalysisType } from '@/lib/types';
 import { useLanguage } from '@/lib/useLanguage';
 
@@ -62,6 +62,11 @@ const BEARISH_WORDS = [
 ];
 
 function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
+  // Check for explicit emoji markers from AI prompt first
+  if (/🟢\s*BULLISH/i.test(text)) return 'bullish';
+  if (/🔴\s*BEARISH/i.test(text)) return 'bearish';
+  if (/🟡\s*NEUTRAL/i.test(text)) return 'neutral';
+  // Fall back to keyword counting
   const lower = text.toLowerCase();
   const bull = BULLISH_WORDS.filter(w => lower.includes(w)).length;
   const bear = BEARISH_WORDS.filter(w => lower.includes(w)).length;
@@ -76,6 +81,13 @@ const SENTIMENT_CFG = {
   neutral: { bg: 'bg-yellow-500/10', text: 'text-yellow-500', border: 'border-yellow-500/30' },
 };
 
+const SECTION_ICONS = {
+  trend:               TrendingUp,
+  supportResistance:   BarChart2,
+  rsiMaInterpretation: Activity,
+  keyRisk:             Shield,
+} as const;
+
 const T = {
   en: {
     title: 'AI Analysis',
@@ -89,9 +101,12 @@ const T = {
       rsiMaInterpretation: 'RSI & Moving Averages',
       keyRisk:             'Key Risk',
     },
+    verdict: { bullish: 'BULLISH', bearish: 'BEARISH', neutral: 'NEUTRAL' },
+    verdictSub: { bullish: 'Momentum positive — worth monitoring', bearish: 'Downward pressure — exercise caution', neutral: 'Mixed signals — no clear directional bias' },
     badge: { bullish: 'Worth Considering', bearish: 'Caution', neutral: 'Neutral' },
     dataUsed: 'Data used',
     langBtn: '🇺🇸 EN',
+    disclaimer: 'AI interpretation only — not financial advice. All numbers sourced from calculated market data.',
   },
   id: {
     title: 'Analisis AI',
@@ -101,13 +116,16 @@ const T = {
     empty: (sym: string) => <>Klik <strong>Analisis</strong> untuk insight teknikal AI pada <span className="font-semibold text-gray-600 dark:text-gray-400">{sym}</span></>,
     sections: {
       trend:               'Tren & Momentum',
-      supportResistance:   'RSI & Moving Average',
-      rsiMaInterpretation: 'Support & Resistance',
+      supportResistance:   'Support & Resistance',
+      rsiMaInterpretation: 'RSI & Moving Average',
       keyRisk:             'Risiko Utama',
     },
+    verdict: { bullish: 'BULLISH', bearish: 'BEARISH', neutral: 'NETRAL' },
+    verdictSub: { bullish: 'Momentum positif — layak dipantau', bearish: 'Tekanan turun — waspadai risiko', neutral: 'Sinyal campur — belum ada arah jelas' },
     badge: { bullish: 'Layak Dipertimbangkan', bearish: 'Hati-hati', neutral: 'Netral' },
     dataUsed: 'Data digunakan',
     langBtn: '🇮🇩 ID',
+    disclaimer: 'Interpretasi AI saja — bukan nasihat investasi. Semua angka bersumber dari data pasar yang dihitung.',
   },
 };
 
@@ -229,24 +247,52 @@ export default function AIAnalysis({ stockData, autoRun }: Props) {
       )}
 
       {analysis && !collapsed && !loading && (
-        <div className="divide-y divide-gray-100 dark:divide-gray-800 animate-fade-in">
-          {SECTION_KEYS.map(key => {
-            const badges = getSectionBadges(key, stockData);
-            return (
-              <div key={key} className="px-4 py-3">
-                <p className="metric-label mb-1.5">{t.sections[key]}</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{analysis[key]}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-1">
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-0.5">{t.dataUsed}:</span>
-                  {badges.map((badge, i) => (
-                    <span key={i} className="inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700/60 text-gray-500 dark:text-gray-400">
-                      {badge}
-                    </span>
-                  ))}
-                </div>
+        <div className="animate-fade-in">
+          {/* Verdict banner — most prominent element */}
+          {sentiment && sentimentCfg && (
+            <div className={`mx-4 mt-3 mb-1 rounded-xl border px-4 py-3 flex items-center gap-4 ${sentimentCfg.bg} ${sentimentCfg.border}`}>
+              <div className="shrink-0 text-2xl">
+                {sentiment === 'bullish' ? '🟢' : sentiment === 'bearish' ? '🔴' : '🟡'}
               </div>
-            );
-          })}
+              <div className="min-w-0">
+                <p className={`text-base font-bold tracking-wide ${sentimentCfg.text}`}>
+                  {t.verdict[sentiment]}
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  {t.verdictSub[sentiment]}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="divide-y divide-gray-100 dark:divide-gray-800 mt-2">
+            {SECTION_KEYS.map(key => {
+              const badges = getSectionBadges(key, stockData);
+              const Icon = SECTION_ICONS[key];
+              return (
+                <div key={key} className="px-4 py-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Icon className="w-3.5 h-3.5 text-[#0EA5E9] shrink-0" />
+                    <p className="metric-label">{t.sections[key]}</p>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{analysis[key]}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-0.5">{t.dataUsed}:</span>
+                    {badges.map((badge, i) => (
+                      <span key={i} className="inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700/60 text-gray-500 dark:text-gray-400">
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Disclaimer */}
+          <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-[10px] text-[#6B7280] leading-relaxed">{t.disclaimer}</p>
+          </div>
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Minus, BarChart2, Info, Zap,
-  Maximize2, X, Bell, Share2,
+  Maximize2, X, Bell, Share2, Activity, DollarSign,
 } from 'lucide-react';
 import TradingViewChart from '@/components/TradingViewChart';
 import AIAnalysis from '@/components/AIAnalysis';
@@ -160,6 +160,124 @@ function FairValueCard({ stock }: { stock: StockData }) {
           For educational purposes only. Not financial advice.
         </p>
       </div>
+    </div>
+  );
+}
+
+// ── B2: Computed signal strip ────────────────────────────────────────────────
+
+function computeTechnicalSignal(stock: StockData): 'bullish' | 'bearish' | 'neutral' {
+  let score = 0;
+  if (stock.change1M > 5) score += 2;
+  else if (stock.change1M < -5) score -= 2;
+  else if (stock.change1M > 0) score += 1;
+  else score -= 1;
+  if (stock.price >= stock.sma20) score += 1; else score -= 1;
+  if (stock.price >= stock.sma50) score += 1; else score -= 1;
+  if (stock.rsi14 < 30) score += 1;
+  else if (stock.rsi14 > 70) score -= 1;
+  return score >= 2 ? 'bullish' : score <= -2 ? 'bearish' : 'neutral';
+}
+
+const TECH_CFG = {
+  bullish: { bg: 'bg-[#10B981]/10', border: 'border-[#10B981]/30', text: 'text-[#10B981]', Icon: TrendingUp,  label: 'BULLISH' },
+  bearish: { bg: 'bg-red-500/8',    border: 'border-red-500/25',    text: 'text-red-500',   Icon: TrendingDown, label: 'BEARISH' },
+  neutral: { bg: 'bg-gray-100 dark:bg-gray-800/50', border: 'border-gray-200 dark:border-gray-700', text: 'text-gray-500 dark:text-gray-400', Icon: Minus, label: 'NEUTRAL' },
+};
+
+const RSI_CFG = {
+  overbought: { bg: 'bg-red-500/8',    border: 'border-red-500/25',    text: 'text-red-500',   label: 'Overbought' },
+  oversold:   { bg: 'bg-[#10B981]/10', border: 'border-[#10B981]/30', text: 'text-[#10B981]', label: 'Oversold'   },
+  neutral:    { bg: 'bg-gray-100 dark:bg-gray-800/50', border: 'border-gray-200 dark:border-gray-700', text: 'text-gray-500 dark:text-gray-400', label: 'Neutral' },
+};
+
+function SignalStrip({ stock }: { stock: StockData }) {
+  const techSignal  = computeTechnicalSignal(stock);
+  const techCfg     = TECH_CFG[techSignal];
+  const { Icon: TechIcon } = techCfg;
+
+  const rsiKey   = stock.rsi14 > 70 ? 'overbought' : stock.rsi14 < 30 ? 'oversold' : 'neutral';
+  const rsiCfg   = RSI_CFG[rsiKey];
+
+  const fvMethods = computeFV(stock);
+  let fvSignal: FVSignal | null = null;
+  let fvLabel = '';
+  if (fvMethods) {
+    const valid = fvMethods.filter(m => m.signal !== 'na').map(m => m.signal);
+    const under = valid.filter(s => s === 'undervalued').length;
+    const over  = valid.filter(s => s === 'overvalued').length;
+    if (under >= 2)     { fvSignal = 'undervalued'; fvLabel = 'Undervalued'; }
+    else if (over >= 2) { fvSignal = 'overvalued';  fvLabel = 'Overvalued';  }
+    else if (valid.length > 0) { fvSignal = 'fair'; fvLabel = 'Fair Value';  }
+  }
+  const fvCfg = fvSignal ? FV_CFG[fvSignal] : null;
+
+  const aboveSMA = [stock.price >= stock.sma20, stock.price >= stock.sma50].filter(Boolean).length;
+  const smaSub = aboveSMA === 2 ? 'Di atas SMA20/50' : aboveSMA === 1 ? 'SMA campuran' : 'Di bawah SMA20/50';
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#1F2937]">
+      {/* Header with methodology tooltip */}
+      <div className="flex items-center gap-1.5 mb-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          Sinyal Teknikal
+        </span>
+        <div className="relative group">
+          <Info className="w-3 h-3 text-[#6B7280] cursor-help" />
+          <div className="absolute left-0 top-4 z-30 w-64 p-2.5 text-[11px] leading-relaxed bg-[#1E293B] text-gray-200 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <p className="font-semibold text-white mb-1.5">Cara menghitung sinyal:</p>
+            <p className="mb-1.5">
+              <span className="font-medium text-[#10B981]">Arah Teknikal</span>
+              {' '}— Skor dari perubahan 1 bulan (±2 poin jika {'>'} 5%), posisi vs SMA20 &amp; SMA50 (±1 masing-masing), kondisi RSI (±1). Skor ≥ 2 = BULLISH, ≤ −2 = BEARISH.
+            </p>
+            <p className="mb-1.5">
+              <span className="font-medium text-[#38BDF8]">RSI(14)</span>
+              {' '}— Di atas 70 = overbought (tekanan jual potensial). Di bawah 30 = oversold (potensi rebound).
+            </p>
+            <p>
+              <span className="font-medium text-[#FCD34D]">Valuasi</span>
+              {' '}— Konsensus dari Graham Number, P/E Fair Value, dan PEG Value. Minimal 2 dari 3 metode harus sepakat.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Signal badges */}
+      <div className="flex flex-wrap gap-2">
+        {/* Technical direction */}
+        <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border flex-1 min-w-[130px] ${techCfg.bg} ${techCfg.border}`}>
+          <TechIcon className={`w-4 h-4 shrink-0 ${techCfg.text}`} />
+          <div>
+            <p className={`text-sm font-bold tracking-wide ${techCfg.text}`}>{techCfg.label}</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{smaSub} · 1M {stock.change1M >= 0 ? '+' : ''}{stock.change1M.toFixed(1)}%</p>
+          </div>
+        </div>
+
+        {/* RSI */}
+        <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border flex-1 min-w-[110px] ${rsiCfg.bg} ${rsiCfg.border}`}>
+          <Activity className={`w-4 h-4 shrink-0 ${rsiCfg.text}`} />
+          <div>
+            <p className={`text-sm font-bold ${rsiCfg.text}`}>RSI {stock.rsi14.toFixed(1)}</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{rsiCfg.label}</p>
+          </div>
+        </div>
+
+        {/* Valuation (only if we have EPS data) */}
+        {fvSignal && fvCfg && (
+          <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border flex-1 min-w-[120px] ${fvCfg.bg} border-current/20`}>
+            <DollarSign className={`w-4 h-4 shrink-0 ${fvCfg.text}`} />
+            <div>
+              <p className={`text-sm font-bold ${fvCfg.text}`}>{fvLabel}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">Fair Value est.</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Disclaimer */}
+      <p className="text-[10px] text-[#6B7280] mt-2">
+        Sinyal dihitung dari data teknikal, bukan rekomendasi investasi.
+      </p>
     </div>
   );
 }
@@ -394,7 +512,7 @@ function StockAnalysis() {
         <MarketSummary />
 
         {/* Search — own card */}
-        <div className="max-w-[680px] mx-auto mb-4">
+        <div className="mb-4">
           <div className="bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm">
             <form onSubmit={handleSubmit} className="flex gap-2">
               <TickerAutocomplete
@@ -412,7 +530,7 @@ function StockAnalysis() {
               </button>
             </form>
             <p className="mt-1.5 text-[11px] text-[#6B7280] text-center">
-              Clarity in every trade — US stocks &amp; IDX auto-detected
+              US stocks &amp; IDX auto-detected · Data ~15 menit tertunda · Bukan nasihat investasi
             </p>
           </div>
         </div>
@@ -556,6 +674,9 @@ function StockAnalysis() {
                   <ChangeChip value={stock.change1M} label="1 Month" />
                   <ChangeChip value={stock.change3M} label="3 Months" />
                 </div>
+
+                {/* B2: Computed signal strip — shows technical direction + RSI + valuation */}
+                <SignalStrip stock={stock} />
               </div>
 
               {/* Chart — TradingView Advanced Chart Widget */}
@@ -589,7 +710,7 @@ function StockAnalysis() {
                   symbol={stock.symbol}
                   exchange={stock.exchange}
                   currency={stock.currency}
-                  height={520}
+                  height={420}
                 />
               </div>
 
@@ -618,19 +739,29 @@ function StockAnalysis() {
                   </div>
                 </div>
               )}
-              {/* Technical indicators */}
+              {/* AI Analysis */}
+              <AIAnalysis stockData={stock} />
+
+              {/* AI Chat */}
+              <StockChat stockData={stock} />
+            </div>
+
+            {/* ── Right 38% ── */}
+            <div className="space-y-4">
+
+              {/* Technical Indicators — moved here (B3) to give left column more space for chart + AI */}
               <div className="card p-4">
                 <h2 className="card-title mb-3">Technical Indicators</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <MetricBox
                     label="RSI (14)"
-                    value={stock.rsi14}
+                    value={stock.rsi14.toFixed(1)}
                     sub={rsiSignal === 'overbought' ? 'Overbought' : rsiSignal === 'oversold' ? 'Oversold' : 'Neutral zone'}
                     subColor={rsiSignal === 'overbought' ? 'text-red-500' : rsiSignal === 'oversold' ? 'text-[#10B981]' : 'text-[#6B7280]'}
                   />
                   <MetricBox
                     label="Rel. Volume"
-                    value={`${stock.relativeVolume}x`}
+                    value={`${stock.relativeVolume.toFixed(2)}x`}
                     sub={`Vol: ${formatVolume(stock.volume)}`}
                   />
                   <MetricBox
@@ -648,16 +779,6 @@ function StockAnalysis() {
                 </div>
               </div>
 
-              {/* AI Analysis */}
-              <AIAnalysis stockData={stock} />
-
-              {/* AI Chat */}
-              <StockChat stockData={stock} />
-            </div>
-
-            {/* ── Right 38% ── */}
-            <div className="space-y-4">
-
               {/* Key Levels */}
               <div className="card p-4">
                 <h2 className="card-title mb-3">Key Levels</h2>
@@ -672,28 +793,42 @@ function StockAnalysis() {
               {/* Fundamentals */}
               {hasFundamentals && (() => {
                 const isIDX = isIDXStock(stock);
+                const missingFundamentals = isIDX && (stock.peRatio == null || stock.eps == null || stock.beta == null);
                 return (
                   <div className="card p-4">
-                    <h2 className="card-title mb-3">Fundamentals</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      <MetricBox label="Market Cap" value={formatLargeNumber(stock.marketCap, stock.currency)} />
-                      <MetricBox label="P/E Ratio"  value={stock.peRatio != null ? stock.peRatio.toFixed(2) : '—'} />
-                      <MetricBox
-                        label="EPS (TTM)"
-                        value={stock.eps != null
-                          ? `${stock.currency === 'IDR' ? 'Rp' : '$'}${stock.eps.toFixed(2)}`
-                          : '—'}
-                      />
-                      <MetricBox label="Beta"      value={stock.beta != null ? stock.beta.toFixed(2) : '—'} />
-                      <MetricBox
-                        label="Div. Yield"
-                        value={stock.dividendYield != null ? `${(stock.dividendYield * 100).toFixed(2)}%` : '—'}
-                      />
-                      <MetricBox label="Sector" value={stock.sector ?? '—'} />
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="card-title">Fundamentals</h2>
+                      <span className="text-[10px] text-[#6B7280]">~15 min delay</span>
                     </div>
-                    {isIDX && (stock.peRatio == null || stock.eps == null || stock.beta == null) && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {stock.marketCap != null && (
+                        <MetricBox label="Market Cap" value={formatLargeNumber(stock.marketCap, stock.currency)} />
+                      )}
+                      {stock.peRatio != null && (
+                        <MetricBox label="P/E Ratio" value={stock.peRatio.toFixed(2)} />
+                      )}
+                      {stock.eps != null && (
+                        <MetricBox
+                          label="EPS (TTM)"
+                          value={`${stock.currency === 'IDR' ? 'Rp' : '$'}${stock.eps.toFixed(2)}`}
+                        />
+                      )}
+                      {stock.beta != null && (
+                        <MetricBox label="Beta" value={stock.beta.toFixed(2)} />
+                      )}
+                      {stock.dividendYield != null && (
+                        <MetricBox
+                          label="Div. Yield"
+                          value={`${(stock.dividendYield * 100).toFixed(2)}%`}
+                        />
+                      )}
+                      {stock.sector != null && (
+                        <MetricBox label="Sector" value={stock.sector} />
+                      )}
+                    </div>
+                    {missingFundamentals && (
                       <p className="text-[10px] text-[#9CA3AF] mt-2">
-                        * P/E, EPS &amp; Beta terbatas untuk saham IDX — lihat laporan keuangan emiten.
+                        * P/E, EPS &amp; Beta belum tersedia untuk saham IDX — lihat laporan keuangan emiten.
                       </p>
                     )}
                   </div>

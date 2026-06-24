@@ -1,7 +1,19 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Sparkles, ChevronDown, ChevronUp, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Sparkles, ChevronDown, ChevronUp, TrendingUp, TrendingDown, RefreshCw, AlertTriangle } from 'lucide-react';
 import type { MarketSummaryData } from '@/app/api/market-summary/route';
+
+const STALE_THRESHOLD_MS = 3 * 60 * 60 * 1000; // 3 hours
+
+function formatTimestamp(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) +
+      ', ' + d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  } catch {
+    return iso;
+  }
+}
 
 function timeAgo(iso: string): string {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -12,7 +24,7 @@ function timeAgo(iso: string): string {
 
 function SkeletonCard() {
   return (
-    <div className="max-w-[680px] mx-auto mb-4">
+    <div className="mb-4">
       <div className="bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl px-4 py-3 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -40,23 +52,40 @@ function SkeletonCard() {
 export default function MarketSummary() {
   const [data, setData] = useState<MarketSummaryData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/market-summary')
-      .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.json(); })
-      .then((d: MarketSummaryData) => setData(d))
-      .catch(() => { /* hide card silently */ })
-      .finally(() => setLoading(false));
+  const load = useCallback(async (force = false) => {
+    const url = force ? '/api/market-summary?force=1' : '/api/market-summary';
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('fetch failed');
+      const d: MarketSummaryData = await r.json();
+      setData(d);
+    } catch {
+      /* hide card silently */
+    }
   }, []);
+
+  useEffect(() => {
+    load(false).finally(() => setLoading(false));
+  }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load(true);
+    setRefreshing(false);
+  };
 
   if (loading) return <SkeletonCard />;
   if (!data) return null;
 
   const up = data.ihsg_change >= 0;
+  const isStale = Date.now() - new Date(data.generated_at).getTime() > STALE_THRESHOLD_MS;
+  const isExtreme = Math.abs(data.ihsg_change) > 4;
 
   return (
-    <div className="max-w-[680px] mx-auto mb-4">
+    <div className="mb-4">
       <div className="bg-white dark:bg-[#1E293B] border border-gray-200 dark:border-[#2D3748] rounded-xl shadow-sm overflow-hidden">
 
         {/* ── Header ── */}
@@ -67,23 +96,46 @@ export default function MarketSummary() {
               Ringkasan Pasar IDX
             </span>
             {/* IHSG inline */}
-            <span className="flex items-center gap-1 shrink-0">
+            <span className="flex items-center gap-1.5 shrink-0">
               <span className="text-[12px] font-bold text-gray-800 dark:text-gray-200">
-                {data.ihsg_price.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
+                IHSG {data.ihsg_price.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
               </span>
               <span className={`text-[11px] font-semibold ${up ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
                 {up ? '+' : ''}{data.ihsg_change.toFixed(2)}%
               </span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                Harian
+              </span>
             </span>
+            {isExtreme && (
+              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-1.5 py-0.5 rounded shrink-0">
+                <AlertTriangle className="w-2.5 h-2.5" />
+                Pergerakan ekstrem — verifikasi
+              </span>
+            )}
             <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold text-[#0EA5E9] bg-[#0EA5E9]/10 px-1.5 py-0.5 rounded shrink-0">
               <Sparkles className="w-2.5 h-2.5" />
               AI
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-2">
-            <span className="hidden sm:block text-[10px] text-gray-400 dark:text-gray-500">
+            {isStale && (
+              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                <AlertTriangle className="w-3 h-3" />
+                Data tertunda
+              </span>
+            )}
+            <span className="hidden sm:block text-[10px] text-gray-400 dark:text-gray-500" title={formatTimestamp(data.generated_at)}>
               {timeAgo(data.generated_at)}
             </span>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Perbarui data pasar"
+              className="p-1 rounded text-gray-400 hover:text-[#0EA5E9] transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
             <button
               onClick={() => setCollapsed(c => !c)}
               aria-label={collapsed ? 'Expand' : 'Collapse'}
@@ -97,6 +149,22 @@ export default function MarketSummary() {
         {/* ── Body ── */}
         {!collapsed && (
           <div className="px-4 py-3 space-y-3">
+
+            {/* Stale banner (mobile-visible) */}
+            {isStale && (
+              <div className="flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-3 py-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                Data mungkin tidak terkini ({timeAgo(data.generated_at)}). Tekan refresh untuk memperbarui.
+              </div>
+            )}
+
+            {/* Extreme movement sanity note */}
+            {isExtreme && (
+              <div className="flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-3 py-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                Pergerakan IHSG {Math.abs(data.ihsg_change).toFixed(2)}% terdeteksi. Pastikan data valid sebelum mengambil keputusan.
+              </div>
+            )}
 
             {/* Summary paragraphs */}
             {data.summary && (
@@ -136,6 +204,10 @@ export default function MarketSummary() {
                 </span>
               ))}
             </div>
+
+            <p className="text-[10px] text-[#6B7280]">
+              Diperbarui: {formatTimestamp(data.generated_at)} · Data pasar ~15 menit tertunda
+            </p>
 
           </div>
         )}

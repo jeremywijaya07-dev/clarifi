@@ -87,9 +87,12 @@ async function fetchYahooQuote(yahooSym: string): Promise<{ price: number; chang
   }
 }
 
-export async function GET() {
-  // Serve from cache if still fresh
-  if (_cache && _cache.expiresAt > Date.now()) {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const forceRefresh = searchParams.get('force') === '1';
+
+  // Serve from cache if still fresh (unless force-refresh requested)
+  if (!forceRefresh && _cache && _cache.expiresAt > Date.now()) {
     return NextResponse.json(_cache.data);
   }
 

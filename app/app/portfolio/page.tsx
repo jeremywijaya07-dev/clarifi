@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Trash2, RefreshCw, PieChart, Plus, Loader2 } from 'lucide-react';
+import { Trash2, RefreshCw, PieChart, Plus, Loader2, LogIn } from 'lucide-react';
 import { StockData } from '@/lib/types';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import TickerAutocomplete from '@/components/TickerAutocomplete';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface StoredPosition {
   id: string;
@@ -20,19 +22,37 @@ interface PortfolioItem extends StoredPosition {
   error: boolean;
 }
 
-const STORAGE_KEY = 'portfolio';
+const LOCAL_KEY = 'portfolio';
 
-function saveToStorage(positions: StoredPosition[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
+function saveLocal(positions: StoredPosition[]) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(positions));
+}
+
+function getLocal(): StoredPosition[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function clearLocal() {
+  localStorage.removeItem(LOCAL_KEY);
 }
 
 function toStored({ id, symbol, lots, buyPrice, lotSize }: PortfolioItem): StoredPosition {
   return { id, symbol, lots, buyPrice, lotSize };
 }
 
+function market(symbol: string): string {
+  return symbol.includes(':') || symbol.length <= 4 ? 'IDX' : 'US';
+}
+
+// ── component ─────────────────────────────────────────────────────────────────
+
 export default function PortfolioPage() {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [initialized, setInitialized] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   const [sym, setSym] = useState('');
   const [lots, setLots] = useState('');
@@ -41,29 +61,97 @@ export default function PortfolioPage() {
   const [adding, setAdding] = useState(false);
   const lotsRef = useRef<HTMLInputElement>(null);
 
+  const supabase = createClient();
+
   const loadItem = useCallback((item: PortfolioItem) => {
     fetch(`/api/stock?symbol=${encodeURIComponent(item.symbol)}`)
       .then(r => r.json())
       .then(data => {
         setItems(prev =>
-          prev.map(it => it.id === item.id ? { ...it, data: data as StockData, loading: false } : it)
+          prev.map(it => it.id === item.id ? { ...it, data: data as StockData, loading: false } : it),
         );
       })
       .catch(() => {
         setItems(prev =>
-          prev.map(it => it.id === item.id ? { ...it, loading: false, error: true } : it)
+          prev.map(it => it.id === item.id ? { ...it, loading: false, error: true } : it),
         );
       });
   }, []);
 
+  const buildItems = useCallback((positions: StoredPosition[]): PortfolioItem[] =>
+    positions.map(p => ({ ...p, data: null, loading: true, error: false })), []);
+
+  const loadFromDB = useCallback(async (uid: string): Promise<StoredPosition[]> => {
+    const { data } = await supabase
+      .from('portfolio')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: true });
+
+    return (data ?? []).map((r: {
+      id: string; ticker: string; shares: number; avg_price: number; lot_size: number;
+    }) => ({
+      id: r.id,
+      symbol: r.ticker,
+      lots: r.lot_size > 0 ? r.shares / r.lot_size : r.shares,
+      buyPrice: r.avg_price,
+      lotSize: r.lot_size,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Migrate localStorage portfolio to Supabase on first login
+  const migrateIfNeeded = useCallback(async (uid: string) => {
+    const local = getLocal();
+    if (!local.length) return;
+    const rows = local.map(p => ({
+      user_id: uid,
+      ticker: p.symbol,
+      market: market(p.symbol),
+      shares: p.lots * p.lotSize,
+      avg_price: p.buyPrice,
+      lot_size: p.lotSize,
+    }));
+    await supabase.from('portfolio').upsert(rows, { onConflict: 'user_id,ticker' });
+    clearLocal();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const stored: StoredPosition[] = raw ? JSON.parse(raw) : [];
-    const initial: PortfolioItem[] = stored.map(p => ({ ...p, data: null, loading: true, error: false }));
-    setItems(initial);
-    setInitialized(true);
-    initial.forEach(loadItem);
-  }, [loadItem]);
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data.user ?? null;
+      setUser(u);
+      let positions: StoredPosition[];
+      if (u) {
+        await migrateIfNeeded(u.id);
+        positions = await loadFromDB(u.id);
+      } else {
+        positions = getLocal();
+      }
+      const initial = buildItems(positions);
+      setItems(initial);
+      setInitialized(true);
+      initial.forEach(loadItem);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      let positions: StoredPosition[];
+      if (u) {
+        await migrateIfNeeded(u.id);
+        positions = await loadFromDB(u.id);
+      } else {
+        positions = getLocal();
+      }
+      const initial = buildItems(positions);
+      setItems(initial);
+      initial.forEach(loadItem);
+    });
+
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAdd = async () => {
     setFormErr('');
@@ -83,22 +171,55 @@ export default function PortfolioPage() {
       if (!data.symbol) throw new Error('Saham tidak ditemukan');
 
       const lotSize = data.currency === 'IDR' ? 100 : 1;
-      const newItem: PortfolioItem = {
-        id: Date.now().toString(),
-        symbol: data.symbol,
-        lots: lotsNum,
-        buyPrice: buyPriceNum,
-        lotSize,
-        data,
-        loading: false,
-        error: false,
-      };
 
-      setItems(prev => {
-        const next = [...prev, newItem];
-        saveToStorage(next.map(toStored));
-        return next;
-      });
+      if (user) {
+        const { data: inserted, error } = await supabase
+          .from('portfolio')
+          .upsert(
+            {
+              user_id: user.id,
+              ticker: data.symbol,
+              market: market(data.symbol),
+              shares: lotsNum * lotSize,
+              avg_price: buyPriceNum,
+              lot_size: lotSize,
+            },
+            { onConflict: 'user_id,ticker' },
+          )
+          .select()
+          .single();
+
+        if (error) throw new Error('Gagal menyimpan ke database');
+
+        const newItem: PortfolioItem = {
+          id: (inserted as { id: string }).id,
+          symbol: data.symbol,
+          lots: lotsNum,
+          buyPrice: buyPriceNum,
+          lotSize,
+          data,
+          loading: false,
+          error: false,
+        };
+        setItems(prev => [...prev, newItem]);
+      } else {
+        const newItem: PortfolioItem = {
+          id: Date.now().toString(),
+          symbol: data.symbol,
+          lots: lotsNum,
+          buyPrice: buyPriceNum,
+          lotSize,
+          data,
+          loading: false,
+          error: false,
+        };
+        setItems(prev => {
+          const next = [...prev, newItem];
+          saveLocal(next.map(toStored));
+          return next;
+        });
+      }
+
       setSym('');
       setLots('');
       setBuyPrice('');
@@ -109,12 +230,17 @@ export default function PortfolioPage() {
     }
   };
 
-  const remove = (id: string) => {
-    setItems(prev => {
-      const next = prev.filter(it => it.id !== id);
-      saveToStorage(next.map(toStored));
-      return next;
-    });
+  const remove = async (id: string) => {
+    if (user) {
+      await supabase.from('portfolio').delete().eq('id', id).eq('user_id', user.id);
+    } else {
+      setItems(prev => {
+        const next = prev.filter(it => it.id !== id);
+        saveLocal(next.map(toStored));
+        return next;
+      });
+    }
+    setItems(prev => prev.filter(it => it.id !== id));
   };
 
   const refreshAll = () => {
@@ -125,7 +251,6 @@ export default function PortfolioPage() {
     });
   };
 
-  // Group totals by currency
   const currencyTotals: Record<string, { value: number; cost: number }> = {};
   for (const it of items) {
     if (!it.data) continue;
@@ -149,6 +274,7 @@ export default function PortfolioPage() {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Portfolio</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {items.length} position{items.length !== 1 ? 's' : ''}
+              {user && <span className="text-[#0EA5E9] ml-1">· tersinkron</span>}
             </p>
           </div>
           {items.length > 0 && (
@@ -161,6 +287,16 @@ export default function PortfolioPage() {
             </button>
           )}
         </div>
+
+        {/* CTA when logged out */}
+        {!user && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-[#0EA5E9]/5 border border-[#0EA5E9]/20 rounded-xl">
+            <LogIn className="w-4 h-4 text-[#0EA5E9] shrink-0" />
+            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1">
+              Masuk untuk menyimpan &amp; sinkron portfolio lintas perangkat.
+            </p>
+          </div>
+        )}
 
         {/* Summary card */}
         {hasLoaded && (
@@ -234,9 +370,7 @@ export default function PortfolioPage() {
               Add
             </button>
           </div>
-          {formErr && (
-            <p className="text-xs text-[#E24B4A] mt-2">{formErr}</p>
-          )}
+          {formErr && <p className="text-xs text-[#E24B4A] mt-2">{formErr}</p>}
           <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
             IDX: 1 lot = 100 shares &nbsp;·&nbsp; US: masukkan jumlah shares sebagai lots
           </p>
@@ -298,11 +432,7 @@ function PositionCard({ item, onRemove }: { item: PortfolioItem; onRemove: () =>
             <p className="font-semibold text-gray-900 dark:text-white">{symbol}</p>
             <p className="text-xs text-[#E24B4A] mt-0.5">Gagal memuat data harga</p>
           </div>
-          <button
-            onClick={onRemove}
-            className="p-1.5 text-gray-400 hover:text-[#E24B4A] transition-colors"
-            title="Hapus posisi"
-          >
+          <button onClick={onRemove} className="p-1.5 text-gray-400 hover:text-[#E24B4A] transition-colors" title="Hapus posisi">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -321,8 +451,6 @@ function PositionCard({ item, onRemove }: { item: PortfolioItem; onRemove: () =>
     <div className="bg-white dark:bg-[#1E293B] rounded-xl border border-gray-200 dark:border-[#1F2937] p-4 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <Link href={`/app?symbol=${encodeURIComponent(data.symbol)}`} className="flex-1 min-w-0 group">
-
-          {/* Symbol + name + exchange */}
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-bold text-gray-900 dark:text-white group-hover:text-[#0EA5E9] transition-colors">
               {data.symbol}
@@ -334,31 +462,21 @@ function PositionCard({ item, onRemove }: { item: PortfolioItem; onRemove: () =>
               {data.exchange}
             </span>
           </div>
-
-          {/* Position meta */}
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-2.5">
             {lots} lot{lots !== 1 ? 's' : ''} &nbsp;·&nbsp; {shares.toLocaleString()} shares &nbsp;·&nbsp; Buy: {formatCurrency(buyPrice, currency)}/share
           </p>
-
-          {/* P/L grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1.5">
             <div>
               <p className="text-[10px] text-gray-400 dark:text-gray-500">Harga Sekarang</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                {formatCurrency(data.price, currency)}
-              </p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(data.price, currency)}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 dark:text-gray-500">Nilai Sekarang</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                {formatCurrency(currentValue, currency)}
-              </p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(currentValue, currency)}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 dark:text-gray-500">Modal</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                {formatCurrency(totalCost, currency)}
-              </p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(totalCost, currency)}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 dark:text-gray-500">P/L</p>
@@ -368,7 +486,6 @@ function PositionCard({ item, onRemove }: { item: PortfolioItem; onRemove: () =>
             </div>
           </div>
         </Link>
-
         <button
           onClick={onRemove}
           className="p-1.5 text-gray-400 hover:text-[#E24B4A] transition-colors shrink-0 mt-0.5"

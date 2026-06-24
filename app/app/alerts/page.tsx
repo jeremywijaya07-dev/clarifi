@@ -1,8 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Trash2, Bell, BellOff, CheckCircle2 } from 'lucide-react';
+import { Trash2, Bell, BellOff, CheckCircle2, LogIn } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface PriceAlert {
   id: string;
@@ -16,32 +18,135 @@ interface PriceAlert {
   createdAt: string;
 }
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function getLocalAlerts(): PriceAlert[] {
+  try {
+    const raw = localStorage.getItem('price_alerts');
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveLocalAlerts(alerts: PriceAlert[]) {
+  localStorage.setItem('price_alerts', JSON.stringify(alerts));
+}
+
+function clearLocalAlerts() {
+  localStorage.removeItem('price_alerts');
+}
+
+function market(symbol: string): string {
+  return symbol.includes(':') || symbol.length <= 4 ? 'IDX' : 'US';
+}
+
+// ── component ─────────────────────────────────────────────────────────────────
+
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [initialized, setInitialized] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
 
-  useEffect(() => {
-    const raw = localStorage.getItem('price_alerts');
-    setAlerts(raw ? JSON.parse(raw) : []);
-    if (typeof Notification !== 'undefined') setPermission(Notification.permission);
-    setInitialized(true);
+  const loadFromDB = useCallback(async (uid: string): Promise<PriceAlert[]> => {
+    const { data } = await supabase
+      .from('alerts')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false });
+
+    return (data ?? []).map((r: {
+      id: string; ticker: string; name: string | null; currency: string;
+      condition: 'above' | 'below'; price: number; base_price: number | null;
+      triggered: boolean; created_at: string;
+    }) => ({
+      id: r.id,
+      symbol: r.ticker,
+      name: r.name ?? r.ticker,
+      currency: r.currency,
+      condition: r.condition,
+      targetPrice: r.price,
+      basePrice: r.base_price ?? r.price,
+      triggered: r.triggered,
+      createdAt: r.created_at,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const remove = (id: string) => {
-    setAlerts(prev => {
-      const next = prev.filter(a => a.id !== id);
-      localStorage.setItem('price_alerts', JSON.stringify(next));
-      return next;
+  // Migrate localStorage alerts to Supabase on first login
+  const migrateIfNeeded = useCallback(async (uid: string) => {
+    const local = getLocalAlerts();
+    if (!local.length) return;
+    const rows = local.map(a => ({
+      user_id: uid,
+      ticker: a.symbol,
+      market: market(a.symbol),
+      name: a.name,
+      currency: a.currency,
+      condition: a.condition,
+      price: a.targetPrice,
+      base_price: a.basePrice,
+      triggered: a.triggered,
+    }));
+    await supabase.from('alerts').insert(rows);
+    clearLocalAlerts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (typeof Notification !== 'undefined') setPermission(Notification.permission);
+
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data.user ?? null;
+      setUser(u);
+      if (u) {
+        await migrateIfNeeded(u.id);
+        const dbAlerts = await loadFromDB(u.id);
+        setAlerts(dbAlerts);
+      } else {
+        setAlerts(getLocalAlerts());
+      }
+      setInitialized(true);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        await migrateIfNeeded(u.id);
+        const dbAlerts = await loadFromDB(u.id);
+        setAlerts(dbAlerts);
+      } else {
+        setAlerts(getLocalAlerts());
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const remove = async (id: string) => {
+    if (user) {
+      await supabase.from('alerts').delete().eq('id', id).eq('user_id', user.id);
+    } else {
+      const next = alerts.filter(a => a.id !== id);
+      saveLocalAlerts(next);
+    }
+    setAlerts(prev => prev.filter(a => a.id !== id));
   };
 
-  const clearTriggered = () => {
-    setAlerts(prev => {
-      const next = prev.filter(a => !a.triggered);
-      localStorage.setItem('price_alerts', JSON.stringify(next));
-      return next;
-    });
+  const clearTriggered = async () => {
+    if (user) {
+      await supabase
+        .from('alerts')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('triggered', true);
+    } else {
+      const next = alerts.filter(a => !a.triggered);
+      saveLocalAlerts(next);
+    }
+    setAlerts(prev => prev.filter(a => !a.triggered));
   };
 
   const requestPermission = async () => {
@@ -64,6 +169,7 @@ export default function AlertsPage() {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Price Alerts</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {active.length} active · dicek setiap 1 menit
+              {user && <span className="text-[#0EA5E9] ml-1">· tersinkron</span>}
             </p>
           </div>
           {triggered.length > 0 && (
@@ -75,6 +181,16 @@ export default function AlertsPage() {
             </button>
           )}
         </div>
+
+        {/* CTA when logged out */}
+        {!user && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-[#0EA5E9]/5 border border-[#0EA5E9]/20 rounded-xl">
+            <LogIn className="w-4 h-4 text-[#0EA5E9] shrink-0" />
+            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1">
+              Masuk untuk menyimpan &amp; sinkron alert lintas perangkat.
+            </p>
+          </div>
+        )}
 
         {/* Permission banner */}
         {permission !== 'granted' && (
