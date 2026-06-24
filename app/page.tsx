@@ -295,10 +295,10 @@ export default function LandingPage() {
               <FadeIn delay={400}>
                 <div className="flex flex-wrap gap-5 text-sm text-[#9CA3AF]">
                   <span className="flex items-center gap-1.5">
-                    <span className="text-[#10B981]">✓</span> Free forever
+                    <span className="text-[#10B981]">✓</span> Mulai tanpa daftar
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="text-[#10B981]">✓</span> No signup required
+                    <span className="text-[#10B981]">✓</span> Masuk untuk simpan &amp; sinkron
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[#10B981]">✓</span> US + IDX markets
@@ -372,7 +372,7 @@ export default function LandingPage() {
           <FadeIn>
             <div className="text-center mb-14">
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Get started in 3 steps</h2>
-              <p className="text-[#9CA3AF] text-lg">No signup, no credit card, no waiting.</p>
+              <p className="text-[#9CA3AF] text-lg">Cari ticker apa pun — hasil instan, tanpa instalasi.</p>
             </div>
           </FadeIn>
 
@@ -428,7 +428,7 @@ export default function LandingPage() {
                 Apa yang ada di dalam Clarifi?
               </h2>
               <p className="text-[#9CA3AF] text-lg">
-                Semua yang kamu butuhkan untuk riset saham — gratis, tanpa daftar.
+                Semua yang kamu butuhkan untuk riset saham — browsing gratis, simpan &amp; sinkron dengan akun.
               </p>
             </div>
           </FadeIn>
@@ -463,7 +463,7 @@ export default function LandingPage() {
               {
                 icon: '🔔',
                 title: 'Price Alerts',
-                desc: 'Set notifikasi harga dan Clarifi akan memberitahu saat target tercapai — tersimpan di browser, tanpa akun.',
+                desc: 'Set notifikasi harga dan Clarifi akan memberitahu saat target tercapai — tersimpan di akun, sinkron lintas perangkat saat login.',
               },
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 70}>
@@ -500,7 +500,7 @@ export default function LandingPage() {
                   Ready to trade smarter?
                 </h2>
                 <p className="text-[#9CA3AF] text-lg mb-8">
-                  Join thousands of traders using Clarifi for free
+                  Riset saham US &amp; IDX dalam satu tempat — gratis untuk mulai
                 </p>
                 <Link
                   href="/app"
@@ -547,7 +547,7 @@ export default function LandingPage() {
 
           <div className="mt-6 pt-6 border-t border-[#1F2937] text-center space-y-1.5">
             <p className="text-xs text-[#6B7280]">
-              © 2025 Clarifi. Data by Yahoo Finance &amp; Twelve Data (~15 min delay). AI by Groq.
+              © {new Date().getFullYear()} Clarifi. Data by Yahoo Finance &amp; Twelve Data (~15 min delay). AI by Groq.
             </p>
             <p className="text-[10px] text-[#4B5563]">
               Bukan nasihat investasi / Not financial advice — untuk tujuan edukasi saja. Lakukan riset mandiri sebelum berinvestasi.
