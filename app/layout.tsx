@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'Clarifi — Clarity in every trade',
   description,
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.png',
+  },
   openGraph: {
     title: 'Clarifi — Clarity in every trade',
     description,
