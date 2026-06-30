@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { StockData } from '@/lib/types';
 
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'openai/gpt-oss-120b';
 
 // ── Indonesian system prompt ──────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ Kembalikan HANYA JSON valid dengan 4 key ini. Nilai tiap key adalah teks paragra
 
 === PANDUAN TIAP SECTION ===
 
-"trend": Bahas pergerakan harga: % perubahan 1 bulan & 3 bulan, posisi harga vs SMA20 & SMA50. Tentukan tren jangka pendek (naik/turun/sideways) dengan angka eksplisit. Akhiri dengan sentimen 🟢 BULLISH / 🔴 BEARISH / 🟡 NEUTRAL.
+"trend": Bahas pergerakan harga: % perubahan 1 bulan & 3 bulan, posisi harga vs SMA20 & SMA50. Tentukan tren jangka pendek (naik/turun/sideways) dengan angka eksplisit. Akhiri paragraf dengan tepat SATU label sentimen — pilih salah satu dari 🟢 BULLISH, 🔴 BEARISH, atau 🟡 NEUTRAL sesuai analisis. Jangan tulis ketiga opsi sekaligus, cukup satu label yang paling sesuai.
 
 "supportResistance": Sebutkan level support (20D Low, 52W Low) dan resistance (20D High, 52W High) dengan angka persis dari data. Jelaskan posisi harga saat ini relatif terhadap level-level tersebut.
 
@@ -112,7 +112,7 @@ Return ONLY valid JSON with exactly these 4 keys (plain text values, no markdown
 }
 
 Section guidance:
-- "trend": Quote exact 1M and 3M change %, price vs SMA20 & SMA50 with exact numbers. End with 🟢 BULLISH / 🔴 BEARISH / 🟡 NEUTRAL backed by those numbers.
+- "trend": Quote exact 1M and 3M change %, price vs SMA20 & SMA50 with exact numbers. End the paragraph with exactly ONE sentiment label — choose only one of 🟢 BULLISH, 🔴 BEARISH, or 🟡 NEUTRAL that matches the analysis. Do not write all three options; write only the one that applies.
 - "supportResistance": Name all four levels verbatim from data (20D Low, 20D High, 52W Low, 52W High) with exact values. Explain current price position relative to each.
 - "rsiMaInterpretation": Write exact RSI value, classify it (>70 overbought, <30 oversold). Compare price to SMA20 and SMA50 with exact numbers.
 - "keyRisk": One specific concrete risk with at least one exact number from the data. Not a generic disclaimer.`;
@@ -178,32 +178,53 @@ function parseAnalysisResponse(text: string): {
   rsiMaInterpretation: string;
   keyRisk: string;
 } {
-  // 1. Try direct JSON parse
-  try {
-    const raw = text.trim();
-    // Extract JSON object if wrapped in markdown code fences
-    const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) ?? raw.match(/(\{[\s\S]*\})/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : raw;
-    const parsed = JSON.parse(jsonStr);
+  const raw = text.trim();
 
-    if (parsed && typeof parsed === 'object') {
-      return {
-        trend:               String(parsed.trend               ?? parsed.tren                ?? ''),
-        supportResistance:   String(parsed.supportResistance   ?? parsed.support_resistance  ?? ''),
-        rsiMaInterpretation: String(parsed.rsiMaInterpretation ?? parsed.rsi_ma              ?? parsed.momentum ?? ''),
-        keyRisk:             String(parsed.keyRisk             ?? parsed.risiko              ?? ''),
-      };
+  // 1. Try JSON.parse on several candidate strings in order of specificity
+  const candidates: string[] = [];
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) candidates.push(fenceMatch[1].trim());
+  const objectMatch = raw.match(/\{[\s\S]*\}/);
+  if (objectMatch) candidates.push(objectMatch[0]);
+  candidates.push(raw);
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const result = {
+          trend:               String(parsed.trend               ?? parsed.tren               ?? ''),
+          supportResistance:   String(parsed.supportResistance   ?? parsed.support_resistance ?? ''),
+          rsiMaInterpretation: String(parsed.rsiMaInterpretation ?? parsed.rsi_ma            ?? parsed.momentum ?? ''),
+          keyRisk:             String(parsed.keyRisk             ?? parsed.key_risk           ?? parsed.risiko   ?? ''),
+        };
+        if (result.trend || result.supportResistance || result.rsiMaInterpretation || result.keyRisk) {
+          return result;
+        }
+      }
+    } catch {
+      // try next candidate
     }
-  } catch {
-    // fall through to paragraph splitting
   }
 
-  // 2. Fallback: split by blank lines (original behaviour)
-  const paragraphs = text
-    .split(/\n\n+/)
-    .map(p => p.trim())
-    .filter(p => p.length > 20);
+  // 2. Per-field regex extraction — handles models that produce invalid JSON
+  //    (e.g. literal newlines inside string values that break JSON.parse)
+  const field = (key: string): string => {
+    const m = raw.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's'));
+    return m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
+  };
+  const byRegex = {
+    trend:               field('trend')               || field('tren'),
+    supportResistance:   field('supportResistance')   || field('support_resistance'),
+    rsiMaInterpretation: field('rsiMaInterpretation') || field('rsi_ma'),
+    keyRisk:             field('keyRisk')             || field('key_risk') || field('risiko'),
+  };
+  if (byRegex.trend || byRegex.supportResistance || byRegex.rsiMaInterpretation || byRegex.keyRisk) {
+    return byRegex;
+  }
 
+  // 3. Last resort: split by blank lines
+  const paragraphs = raw.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 20);
   return {
     trend:               paragraphs[0] ?? '',
     supportResistance:   paragraphs[1] ?? '',
@@ -229,37 +250,36 @@ export async function POST(request: NextRequest) {
 
     let messages: Message[];
     let maxTokens = 1000;
-    let useJsonMode = false;
 
     if (type === 'compare' && stock1Data && stock2Data) {
       messages = [{ role: 'user', content: buildComparePrompt(stock1Data as StockData, stock2Data as StockData, lang) }];
       maxTokens = 700;
     } else if (stockData) {
-      useJsonMode = true;
       if (lang === 'id') {
         messages = [
           { role: 'system', content: ANALYSIS_SYSTEM_PROMPT_ID },
           { role: 'user',   content: buildDataMessageID(stockData as StockData) },
         ];
-        maxTokens = 900;
+        maxTokens = 1500;
       } else {
         messages = [
           { role: 'system', content: ANALYSIS_SYSTEM_PROMPT_EN },
           { role: 'user',   content: buildDataMessageEN(stockData as StockData) },
         ];
-        maxTokens = 900;
+        maxTokens = 1500;
       }
     } else {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
     const client = new Groq({ apiKey });
-    const completion = await client.chat.completions.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const completion = await (client.chat.completions.create as any)({
       model: MODEL,
       messages,
       max_tokens: maxTokens,
       temperature: 0.2,
-      ...(useJsonMode ? { response_format: { type: 'json_object' } } : {}),
+      reasoning_effort: 'low',
     });
 
     const text = completion.choices[0]?.message?.content ?? '';

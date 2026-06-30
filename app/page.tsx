@@ -334,7 +334,7 @@ export default function LandingPage() {
               {
                 icon: '🤖',
                 title: 'AI-Powered Analysis',
-                desc: 'Get professional 4-paragraph analysis on any stock powered by Groq Llama 3.3. Trend, support/resistance, momentum, and risk — all in seconds.',
+                desc: 'Get professional 4-paragraph analysis on any stock powered by Groq GPT-OSS 120B. Trend, support/resistance, momentum, and risk — all in seconds.',
               },
               {
                 icon: '🌏',
@@ -397,7 +397,7 @@ export default function LandingPage() {
                 step: '3',
                 icon: '🤖',
                 title: 'AI Analysis',
-                desc: 'Click Analyze for professional insights powered by Groq Llama 3.3.',
+                desc: 'Click Analyze for professional insights powered by Groq GPT-OSS 120B.',
               },
             ].map((s, i) => (
               <FadeIn key={s.step} delay={i * 120}>

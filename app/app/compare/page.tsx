@@ -8,6 +8,7 @@ import {
   formatPercent,
   getRSISignal,
 } from '@/lib/utils';
+import { getSentiment } from '@/lib/sentiment';
 import TickerAutocomplete from '@/components/TickerAutocomplete';
 import { useLanguage } from '@/lib/useLanguage';
 import CompareChart from '@/components/CompareChart';
@@ -210,11 +211,6 @@ interface Row {
   rawNum2?: number | null;
 }
 
-function getSentiment(s: StockData): 'bullish' | 'bearish' | 'neutral' {
-  if (s.rsi14 >= 40 && s.rsi14 <= 70 && s.price >= s.sma20 && s.change1M > 0) return 'bullish';
-  if (s.rsi14 < 45  && s.price < s.sma50 && s.change1M < 0)                   return 'bearish';
-  return 'neutral';
-}
 
 const SENTIMENT_RANK:  Record<'bullish' | 'bearish' | 'neutral', number>        = { bullish: 2, neutral: 1, bearish: 0 };
 const SENTIMENT_LABEL: Record<'bullish' | 'bearish' | 'neutral', string>        = { bullish: '🟢 Bullish', bearish: '🔴 Bearish', neutral: '🟡 Neutral' };

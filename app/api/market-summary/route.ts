@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'openai/gpt-oss-120b';
 
 const IDX_STOCKS = [
   { symbol: 'BBCA',  name: 'Bank BCA',           sector: 'Perbankan' },

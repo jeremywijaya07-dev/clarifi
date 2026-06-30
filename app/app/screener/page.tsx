@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Filter, RefreshCw, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { StockData } from '@/lib/types';
 import { formatCurrency, formatPercent } from '@/lib/utils';
+import { getSentiment } from '@/lib/sentiment';
 
 // ── Universe ─────────────────────────────────────────────────────────────────
 
@@ -63,12 +64,6 @@ const EMPTY_FILTERS: Filters = {
 };
 
 // ── Sentiment logic (client-side, no extra API call) ─────────────────────────
-
-function getSentiment(s: StockData): 'bullish' | 'bearish' | 'neutral' {
-  if (s.rsi14 >= 40 && s.rsi14 <= 70 && s.price >= s.sma20 && s.change1M > 0) return 'bullish';
-  if (s.rsi14 < 45  && s.price < s.sma50 && s.change1M < 0)                   return 'bearish';
-  return 'neutral';
-}
 
 // ── Filter logic ──────────────────────────────────────────────────────────────
 

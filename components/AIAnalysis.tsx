@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Sparkles, RefreshCw, Loader2, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, Shield, BarChart2, Activity } from 'lucide-react';
 import { StockData, AIAnalysis as AIAnalysisType } from '@/lib/types';
 import { useLanguage } from '@/lib/useLanguage';
+import { getSentiment } from '@/lib/sentiment';
 
 function fmtBadgePrice(n: number, currency: string): string {
   if (!n || n <= 0) return 'N/A';
@@ -48,32 +49,14 @@ function getSectionBadges(key: typeof SECTION_KEYS[number], stock: StockData): s
 
 interface Props { stockData: StockData; autoRun?: boolean; }
 
-const BULLISH_WORDS = [
-  'bullish', 'positive', 'upside', 'outperform', 'strong momentum', 'uptrend',
-  'opportunity', 'growth', 'recommend', 'worth considering', 'buy',
-  'positif', 'naik', 'kuat', 'peluang', 'tumbuh', 'direkomendasikan', 'layak',
-  'tren naik', 'momentum naik', 'meningkat',
-];
-const BEARISH_WORDS = [
-  'bearish', 'negative', 'downside', 'underperform', 'weak', 'downtrend',
-  'caution', 'deteriorating', 'avoid', 'concerning',
-  'negatif', 'turun', 'lemah', 'risiko', 'waspada', 'hati-hati',
-  'melemah', 'tren turun', 'tekanan jual', 'koreksi',
-];
-
-function parseSentiment(text: string): 'bullish' | 'bearish' | 'neutral' {
-  // Check for explicit emoji markers from AI prompt first
-  if (/🟢\s*BULLISH/i.test(text)) return 'bullish';
-  if (/🔴\s*BEARISH/i.test(text)) return 'bearish';
-  if (/🟡\s*NEUTRAL/i.test(text)) return 'neutral';
-  // Fall back to keyword counting
-  const lower = text.toLowerCase();
-  const bull = BULLISH_WORDS.filter(w => lower.includes(w)).length;
-  const bear = BEARISH_WORDS.filter(w => lower.includes(w)).length;
-  if (bull > bear) return 'bullish';
-  if (bear > bull) return 'bearish';
-  return 'neutral';
+// u flag: treats emoji as single Unicode code points (not surrogate pairs) — prevents "🦣" artifacts
+function stripSentimentLabels(text: string): string {
+  return text
+    .replace(/(?:[🟢🔴🟡]\s*(?:BULLISH|BEARISH|NEUTRAL)\s*[/:\-]?\s*)+/giu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
+
 
 const SENTIMENT_CFG = {
   bullish: { bg: 'bg-[#10B981]/15', text: 'text-[#10B981]', border: 'border-[#10B981]/30' },
@@ -167,11 +150,9 @@ export default function AIAnalysis({ stockData, autoRun }: Props) {
     }
   };
 
-  const sentiment = analysis
-    ? parseSentiment(`${analysis.trend} ${analysis.supportResistance} ${analysis.rsiMaInterpretation} ${analysis.keyRisk}`)
-    : null;
-  const sentimentCfg = sentiment ? SENTIMENT_CFG[sentiment] : null;
-  const badgeLabel   = sentiment ? t.badge[sentiment] : null;
+  const sentiment    = getSentiment(stockData);
+  const sentimentCfg = SENTIMENT_CFG[sentiment];
+  const badgeLabel   = t.badge[sentiment];
 
   return (
     <div className="card overflow-hidden">
@@ -180,7 +161,7 @@ export default function AIAnalysis({ stockData, autoRun }: Props) {
           <Sparkles className="w-4 h-4 text-[#0EA5E9]" />
           <span className="card-title">{t.title}</span>
           <span className="hidden sm:inline text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-            Llama 3.3
+            GPT-OSS 120B
           </span>
           {sentimentCfg && badgeLabel && !loading && (
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${sentimentCfg.bg} ${sentimentCfg.text} ${sentimentCfg.border}`}>
@@ -275,7 +256,7 @@ export default function AIAnalysis({ stockData, autoRun }: Props) {
                     <Icon className="w-3.5 h-3.5 text-[#0EA5E9] shrink-0" />
                     <p className="metric-label">{t.sections[key]}</p>
                   </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{analysis[key]}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{stripSentimentLabels(analysis[key])}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-1">
                     <span className="text-[10px] text-gray-400 dark:text-gray-500 mr-0.5">{t.dataUsed}:</span>
                     {badges.map((badge, i) => (
