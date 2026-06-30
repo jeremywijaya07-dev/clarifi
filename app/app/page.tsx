@@ -16,6 +16,8 @@ import {
   formatCurrency, formatLargeNumber, formatPercent, formatVolume,
   getTrendSignal, getRSISignal,
 } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 // ── Quick-pick tabs ──────────────────────────────────────────────────────────
 
@@ -365,6 +367,8 @@ function StockAnalysis() {
   const [error, setError] = useState<string | null>(null);
   const [stock, setStock] = useState<StockData | null>(null);
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
   const [activeTab, setActiveTab] = useState('us');
   const [chartFullscreen, setChartFullscreen] = useState(false);
   const [alertModal, setAlertModal] = useState(false);
@@ -377,10 +381,31 @@ function StockAnalysis() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('watchlist');
-      if (raw) setWatchlist(JSON.parse(raw));
-    } catch { /* ignore */ }
+    const loadWatchlist = async (u: User | null) => {
+      if (u) {
+        const { data, error } = await supabase.from('watchlist').select('ticker').eq('user_id', u.id);
+        if (error) console.error('[Watchlist] load error:', error);
+        setWatchlist((data ?? []).map((r: { ticker: string }) => r.ticker));
+      } else {
+        try {
+          const raw = localStorage.getItem('watchlist');
+          if (raw) setWatchlist(JSON.parse(raw));
+        } catch { /* ignore */ }
+      }
+    };
+
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user ?? null;
+      setUser(u);
+      loadWatchlist(u);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      loadWatchlist(u);
+    });
+
     const sym = searchParams.get('symbol');
     if (sym) fetchStock(sym);
     // Autofocus from "/" shortcut cross-page navigation
@@ -390,6 +415,8 @@ function StockAnalysis() {
       url.searchParams.delete('autofocus');
       window.history.replaceState({}, '', url.toString());
     }
+
+    return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -437,12 +464,35 @@ function StockAnalysis() {
     fetchStock(query);
   };
 
-  const toggleWatch = () => {
+  const toggleWatch = async () => {
     if (!stock) return;
     const sym = stock.symbol;
-    const next = watchlist.includes(sym) ? watchlist.filter(s => s !== sym) : [...watchlist, sym];
-    setWatchlist(next);
-    localStorage.setItem('watchlist', JSON.stringify(next));
+    const adding = !watchlist.includes(sym);
+    const next = adding ? [...watchlist, sym] : watchlist.filter(s => s !== sym);
+    setWatchlist(next); // optimistic update
+
+    if (user) {
+      if (adding) {
+        const mkt = sym.includes(':') || sym.length <= 4 ? 'IDX' : 'US';
+        const { error } = await supabase
+          .from('watchlist')
+          .upsert([{ user_id: user.id, ticker: sym, market: mkt }], { onConflict: 'user_id,ticker' });
+        if (error) console.error('[Watchlist] Supabase upsert error:', error);
+      } else {
+        const { error } = await supabase
+          .from('watchlist')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('ticker', sym);
+        if (error) console.error('[Watchlist] Supabase delete error:', error);
+      }
+    } else {
+      try {
+        localStorage.setItem('watchlist', JSON.stringify(next));
+      } catch (e) {
+        console.error('[Watchlist] localStorage error:', e);
+      }
+    }
   };
 
   const handleSetAlert = () => {
